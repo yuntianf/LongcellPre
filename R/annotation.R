@@ -1,0 +1,77 @@
+#' @title gtf2bed
+#'
+#' @description Transform gtf annotation to gene bed annotation
+#' @details Exons annotated in gtf will be split into non-overlapping parts and saved in gene bed annotation
+#'
+#' @param gtf_path The path of input gtf files
+#' @param out_path The path to store the output
+#' @param if_store_binary Whether to save the rds format of gene bed
+#' @importFrom GenomicFeatures makeTxDbFromGFF exonsBy exonicParts exons
+#' @importFrom tidyr unnest
+#' @importFrom dplyr mutate
+#' @return NULL
+#' @export
+#'
+
+gtf2bed = function(gtf_path,out_path,if_store_binary = TRUE){
+  txdb <- makeTxDbFromGFF(gtf_path,format="gtf")
+  exons_temp = exonicParts(txdb)
+
+  ### build bed file annotation for each gene ###
+  temp = as.data.frame(exons_temp)
+  temp = temp[,c(1:5,8)]
+  colnames(temp)[colnames(temp) == "gene_id"] = "gene"
+  temp = temp %>% tidyr::unnest(gene)
+  temp = as.data.frame(temp)
+  temp[,"gene"] = substr(temp[,"gene"],1,15)
+  colnames(temp)[1] <- c("chr")
+
+  temp = temp %>% group_by(gene) %>% mutate(id = exon_id(unique(strand),n()))
+  temp = as.data.frame(temp)
+  write.table(temp,file = paste(out_path,"gene_bed.txt",sep = "/"),sep = "\t",
+              col.names = TRUE, row.names = FALSE,quote = FALSE)
+
+  if(if_store_binary){
+    saveRDS(temp,file = paste(out_path,"gene_bed.rds",sep = "/"))
+  }
+
+  ### build exon gtf ###
+  gtf_data = as.data.frame(exons(txdb, columns=c("gene_id","tx_name","exon_name"),
+                                 filter=NULL, use.names=FALSE))
+  gtf_data = gtf_data %>% tidyr::unnest(gene_id) %>% tidyr::unnest(tx_name)
+  colnames(gtf_data)[colnames(gtf_data) == "gene_id"] = "gene"
+
+  gtf_data$gene = substr(gtf_data$gene,1,15)
+  gtf_data = gtf_data[,c(2:3,6:8)]
+  colnames(gtf_data)[4:5] = c("transname","exon_id")
+
+  write.table(gtf_data,file = paste(out_path,"exon_gtf.txt",sep = "/"),sep = "\t",
+              col.names = TRUE, row.names = FALSE,quote = FALSE)
+
+  if(if_store_binary){
+    saveRDS(gtf_data,file = paste(out_path,"exon_gtf.rds",sep = "/"))
+  }
+
+  return(list(temp,gtf_data))
+}
+
+#' @title exon_id
+#'
+#' @description Assign an id for each exon part in the gene bed
+#' @details Assign an id for each exon part in the gene bed according to the gene strand, forward strand gene will
+#' have exon id from smaller coordinates to higher, vice versa for reverse strand gene
+#'
+#' @param strand The gene strand, using "+" to indicate forward and using "-" to indicate reverse
+#' @return A character vector representing the exon id
+#'
+exon_id = function(strand,count){
+  if(strand == "+"){
+    return(as.character(1:count))
+  }
+  else if(strand == "-"){
+    return(as.character(count:1))
+  }
+  else{
+    stop("The gene strand should be marked as + or -")
+  }
+}

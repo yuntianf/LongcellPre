@@ -1,0 +1,13 @@
+Package: LongcellPre
+Type: Package
+Title: Generate single cell isoform expression matrix from bam alignment
+Version: 1.0.0
+Author: Yuntian Fu
+Maintainer: Yuntian Fu <yuntianfu0@gmail.com>
+Description: Generate single cell isoform expression matrix from bam alignment.
+    Use four spaces when indenting paragraphs within the Description.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports: stats4, Rcpp, dbscan, e1071, dplyr, reshape2, tidyr, transport, RcppHungarian, NameNeedle, igraph, MASS, parallel, Rsamtools, GenomicRanges, IRanges, future, future.apply
+LinkingTo: Rcpp, RcppEigen
