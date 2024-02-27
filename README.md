@@ -13,6 +13,33 @@ devtools::install_github("yuntianf/Longcellsrc")
 devtools::install_github("yuntianf/LongcellPre")
 ```
 
+## Workflow
+The simplist way to run `LongcellPre` is to apply:
+```
+library(Longcellsrc)
+library(LongcellPre)
+
+# update your input path here
+fastq = "path of your input fastq or fq.gz"
+barcodes = "path of your input cell barcode whitelist"
+gtf_path = "path of your gtf annotation"
+genome_path = "path of your genome annotation"
+minimap_bed_path = "path of your bed annotation for minimap2, can be generated from gtf" //unnecessary
+genome_name = "the genome name used for mapping, ex. hg38"
+toolkit = your 10X sequencing toolkit
+work_dir = "The output directory"
+
+# specify the path for those tools
+samtools = "samtools"
+minimap2 = "minimap2"
+bedtools = "bedtools"
+
+RunLongcellPre(fastq = fastq,barcode_path = barcodes,toolkit = toolkit,
+               genome_path = genome_path,genome_name = genome_name,
+               gtf_path = gtf_path,minimap_bed_path = minimap_bed_path,work_dir = work_dir,
+               samtools = samtools, minimap2 = minimap2,bedtools = bedtools)
+```
+
 ## Citation
 
 If you use Longcell for published work, please cite our manuscript:
