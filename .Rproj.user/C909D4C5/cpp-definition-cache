@@ -1,0 +1,826 @@
+[
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+        "file_last_write": 1704426722.0,
+        "definitions": [
+            {
+                "usr": "c:@F@mean#$@N@std@S@vector>#d#$@N@std@S@allocator>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "mean(std::vector<double>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 4,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@var#$@N@std@S@vector>#d#$@N@std@S@allocator>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "var(std::vector<double>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 12,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@update_sigma#$@N@std@S@vector>#d#$@N@std@S@allocator>#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "update_sigma(std::vector<double>, double)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 20,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@update_prob#$@N@std@S@vector>#d#$@N@std@S@allocator>#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "update_prob(std::vector<double>, double)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 28,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@kmer_include#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@set>#S0_#$@N@std@S@less>#S0_#$@N@std@S@allocator>#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "kmer_include(std::string, std::set<std::string>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 37,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@barcodes_cos_vec#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#$@N@std@S@set>#S1_#$@N@std@S@less>#S1_#S4_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "barcodes_cos_vec(std::vector<std::string>, set<std::string>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 49,
+                "column": 32,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@cos_sim#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "cos_sim(std::vector<int>, std::vector<int>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 61,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@cos_sim_comp#$@N@std@S@pair>#I#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "cos_sim_comp(std::pair<int, double>, std::pair<int, double>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 71,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@barcode_cand_cos#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@vector>#S0_#$@N@std@S@allocator>#S0_#$@N@std@S@set>#S0_#$@N@std@S@less>#S0_#S4_#$@N@std@S@vector>#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#$@N@std@S@allocator>#S8_#I#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "barcode_cand_cos(std::string, std::vector<std::string>, std::set<std::string>, std::vector<std::vector<int>>, int, double)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 75,
+                "column": 26,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@pos_filter#$@N@std@S@vector>#d#$@N@std@S@allocator>#d#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "pos_filter(std::vector<double>, std::vector<int>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 102,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@barcodeMatch#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#S0_#d#d#d#I#I#I#d#d#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "barcodeMatch(std::vector<std::string>, std::vector<std::string>, double, double, double, int, int, int, double, double, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 179,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@UMIextract#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "UMIextract(std::vector<std::string>, Rcpp::NumericVector, int, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.cpp",
+                "line": 318,
+                "column": 11,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/bc.h",
+        "file_last_write": 1686841255.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/edit.cpp",
+        "file_last_write": 1685371822.0,
+        "definitions": [
+            {
+                "usr": "c:@F@reverse#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "reverse(std::vector<std::string>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/edit.cpp",
+                "line": 3,
+                "column": 26,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@kmer#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "kmer(std::vector<std::string>, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/edit.cpp",
+                "line": 11,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@kmer#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "kmer(std::string, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/edit.cpp",
+                "line": 25,
+                "column": 26,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@editDist#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "editDist(std::string, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/edit.cpp",
+                "line": 35,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@traceback#$@N@std@S@vector>#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#$@N@std@S@allocator>#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "traceback(std::vector<std::vector<int>>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/edit.cpp",
+                "line": 61,
+                "column": 16,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@minEditDist#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "minEditDist(std::string, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/edit.cpp",
+                "line": 95,
+                "column": 16,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/edit.h",
+        "file_last_write": 1685372052.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/exon_corres.cpp",
+        "file_last_write": 1687047255.0,
+        "definitions": [
+            {
+                "usr": "c:@F@exonstr2bin#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#&1S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "exonstr2bin(std::string, const std::string &)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/exon_corres.cpp",
+                "line": 4,
+                "column": 15,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@isostr2bins#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#&1S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "isostr2bins(std::string, const std::string &)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/exon_corres.cpp",
+                "line": 13,
+                "column": 28,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@bin_sum#$@N@std@S@vector>#$@N@std@S@pair>#I#I#$@N@std@S@allocator>#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "bin_sum(std::vector<pair<int, int>>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/exon_corres.cpp",
+                "line": 27,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@paste#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "paste(std::vector<string>, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/exon_corres.cpp",
+                "line": 38,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@exon_status#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "exon_status(std::vector<string>, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/exon_corres.cpp",
+                "line": 50,
+                "column": 21,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@bin2exonid#1$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#I#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#S3_#$@N@std@S@vector>#S0_#$@N@std@S@allocator>#S0_#I#I#I#S0_#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "bin2exonid(const std::string, int, std::vector<int>, std::vector<int>, std::vector<string>, int, int, int, std::string, std::string, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/exon_corres.cpp",
+                "line": 69,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@bins2exonids#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#S5_#S5_#S0_#I#I#I#S1_#S1_#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "bins2exonids(std::vector<string>, std::vector<int>, std::vector<int>, std::vector<int>, std::vector<string>, int, int, int, std::string, std::string, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/exon_corres.cpp",
+                "line": 141,
+                "column": 21,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@isos2exonids_index#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#S5_#S0_#I#I#I#S1_#S1_#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "isos2exonids_index(std::vector<std::string>, std::vector<int>, std::vector<int>, std::vector<std::string>, int, int, int, std::string, std::string, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/exon_corres.cpp",
+                "line": 166,
+                "column": 6,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/exon_corres.h",
+        "file_last_write": 1687038122.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+        "file_last_write": 1696022237.0,
+        "definitions": [
+            {
+                "usr": "c:@F@extractReads#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#S0_#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#1S1_#I#1I#I#I#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "extractReads(std::vector<std::string>, std::vector<std::string>, Rcpp::NumericVector, Rcpp::NumericMatrix, const std::string, int, const int, int, int, int, int, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 6,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@extractSoftclip#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@Rcpp@S@Vector>#VI16#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#1S0_#I#1I#1I#1I#1I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "extractSoftclip(std::string, Rcpp::StringVector, Rcpp::NumericVector, const std::string, int, const int, const int, const int, const int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 73,
+                "column": 26,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@extractIsoform#I#$@N@Rcpp@S@Vector>#VI16#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "extractIsoform(int, Rcpp::StringVector, Rcpp::NumericVector, int, int, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 130,
+                "column": 15,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@chopOutBound#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "chopOutBound(Rcpp::NumericMatrix, Rcpp::NumericMatrix, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 175,
+                "column": 15,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@splicesiteCorrect#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "splicesiteCorrect(Rcpp::NumericMatrix, Rcpp::NumericMatrix, std::string, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 205,
+                "column": 15,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@isoformEnd#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "isoformEnd(Rcpp::NumericMatrix, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 292,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@isoform2string#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "isoform2string(Rcpp::NumericMatrix, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 302,
+                "column": 13,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@polyADetect#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#I#I#C#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "polyADetect(std::string, int, int, char)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 316,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@polyARm#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "polyARm(std::string, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 336,
+                "column": 13,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@cigarProcess#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "cigarProcess(std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 346,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@cigarcheck#$@N@Rcpp@S@Vector>#VI16#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "cigarcheck(Rcpp::StringVector, Rcpp::NumericVector)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 374,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@baseCount#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#C#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "baseCount(std::string, char)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 386,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@reverseComplement#&1$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "reverseComplement(const std::string &)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 397,
+                "column": 13,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@replicate#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "replicate(std::string, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 424,
+                "column": 13,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@within#I#I#1I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "within(int, int, const int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 432,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@seqEnd#I#$@N@Rcpp@S@Vector>#VI16#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "seqEnd(int, Rcpp::StringVector, Rcpp::NumericVector)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.cpp",
+                "line": 436,
+                "column": 5,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_extraction.h",
+        "file_last_write": 1696022065.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_filter.cpp",
+        "file_last_write": 1690939438.0,
+        "definitions": [
+            {
+                "usr": "c:@F@iso2_dis#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#S0_#1S0_#1S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "iso2_dis(std::string, std::string, const std::string, const std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_filter.cpp",
+                "line": 6,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@isos_dis#1$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#1I#1S1_#1S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "isos_dis(const std::vector<std::string>, const int, const std::string, const std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_filter.cpp",
+                "line": 40,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@size_filter_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "size_filter_cpp(Rcpp::NumericVector, double)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_filter.cpp",
+                "line": 63,
+                "column": 15,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/reads_filter.h",
+        "file_last_write": 1689454559.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/splice_site_correct.cpp",
+        "file_last_write": 1689641941.0,
+        "definitions": [
+            {
+                "usr": "c:@F@splice_site_cpp#&1$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "splice_site_cpp(const std::string &, const std::string &)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/splice_site_correct.cpp",
+                "line": 3,
+                "column": 26,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@getSubString#&1$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "getSubString(const std::string &, const std::string &, const std::string &)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/splice_site_correct.cpp",
+                "line": 28,
+                "column": 13,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@isoform_count#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#1S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "isoform_count(std::vector<std::string>, const std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/splice_site_correct.cpp",
+                "line": 48,
+                "column": 28,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@splice_site_count_cpp#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#1S1_#1S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "splice_site_count_cpp(std::vector<std::string>, const std::string, const std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/splice_site_correct.cpp",
+                "line": 61,
+                "column": 38,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@isin#1$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#1$@N@Rcpp@S@Vector>#VI16#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "isin(const std::string, const Rcpp::StringVector)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/splice_site_correct.cpp",
+                "line": 80,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@splice_site_table_cpp#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#1S1_#1S1_#1I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "splice_site_table_cpp(std::vector<std::string>, const std::string, const std::string, const int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/splice_site_correct.cpp",
+                "line": 90,
+                "column": 6,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/splice_site_correct.h",
+        "file_last_write": 1685392168.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_cluster.cpp",
+        "file_last_write": 1685456241.0,
+        "definitions": [
+            {
+                "usr": "c:@F@selectSum#$@N@std@S@map>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#I#$@N@std@S@less>#S1_#$@N@std@S@allocator>#$@N@std@S@pair>#1S1_#I#$@N@std@S@vector>#S1_#$@N@std@S@allocator>#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "selectSum(std::map<std::string, int>, std::vector<std::string>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_cluster.cpp",
+                "line": 3,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@shareNeighbor#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#$@N@Rcpp@S@Vector>#VI19#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "shareNeighbor(std::vector<std::string>, Rcpp::List, Rcpp::NumericVector)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_cluster.cpp",
+                "line": 12,
+                "column": 11,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_cluster.h",
+        "file_last_write": 1685456260.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+        "file_last_write": 1705116511.0,
+        "definitions": [
+            {
+                "usr": "c:@F@flatten#&1$@N@std@S@vector>#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S3_#$@N@std@S@allocator>#S2_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "flatten(const std::vector<std::vector<std::string>> &)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 9,
+                "column": 26,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@str_split#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "str_split(std::string, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 18,
+                "column": 26,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@isoform2sites#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#1S0_#1S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "isoform2sites(std::string, const std::string, const std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 36,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@iso_len#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "iso_len(std::vector<int>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 56,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@bin2_intersect#I#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "bin2_intersect(int, int, int, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 74,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@sites_chop#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "sites_chop(std::vector<int>, int, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 84,
+                "column": 18,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@iso2_mid_dist#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#S0_#1S0_#1S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "iso2_mid_dist(std::string, std::string, const std::string, const std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 109,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@iso_mid_dist#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#I#S1_#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "iso_mid_dist(std::vector<std::string>, int, std::string, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 168,
+                "column": 15,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@iso2_mid_diff#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#S0_#1I#1S0_#1S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "iso2_mid_diff(std::string, std::string, const int, const std::string, const std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 199,
+                "column": 15,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@isoset_mid_diff#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#S0_#1I#1d#1I#S1_#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "isoset_mid_diff(std::vector<std::string>, std::vector<std::string>, const int, const double, const int, std::string, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 281,
+                "column": 15,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@needle#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#S0_#I#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "needle(std::string, std::string, int, int, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 320,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@minEditDis#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#S0_#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "minEditDis(std::string, std::string, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 342,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@pair2id#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "pair2id(int, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 365,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@index#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "index(std::vector<std::string>, std::vector<std::string>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 373,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@vec_extract#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "vec_extract(std::vector<std::string>, std::vector<int>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 391,
+                "column": 26,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@umi_needle#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#S5_#S5_#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "umi_needle(std::vector<std::string>, std::vector<int>, std::vector<int>, std::vector<int>, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 403,
+                "column": 32,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@umi_edit#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#S5_#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "umi_edit(std::vector<std::string>, std::vector<int>, std::vector<int>, int, int)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 438,
+                "column": 32,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@initialize#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "initialize(std::vector<std::string>)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 467,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@umi_graph_table#$@N@std@S@vector>#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#$@N@std@S@allocator>#S1_#S0_#$@N@std@S@vector>#I#$@N@std@S@allocator>#I#I#I#S1_#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "umi_graph_table(std::vector<std::string>, std::vector<std::string>, std::vector<int>, int, int, std::string, std::string)",
+                "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+                "line": 498,
+                "column": 32,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.h",
+        "file_last_write": 1703176290.0,
+        "definitions": [],
+        "hidden": false
+    }
+]

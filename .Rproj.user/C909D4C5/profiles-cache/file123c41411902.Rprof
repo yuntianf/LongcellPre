@@ -1,0 +1,6 @@
+memory profiling: GC profiling: line profiling: sample.interval=10000
+:2237558:2343420:130204648:0:"c" "profvis" 
+#File 1: C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/R/umi_cluster.R
+:2283275:2415244:141109472:3111:"make.promiseContext" "cmpCallArgs" "cmpCallSymFun" "cmpCall" "cmp" "genCode" "cmpCallArgs" "cmpCallSymFun" "cmpCall" "cmp" "genCode" "cmpCallArgs" "cmpCallSymFun" "cmpCall" "cmp" "cmpSymbolAssign" "h" "tryInline" "cmpCall" "cmp" "h" "tryInline" "cmpCall" "cmp" "genCode" "cmpfun" "compiler:::tryCmpfun" 1#195 "profvis" 
+:2319917:2491018:149406600:2003:"lazyLoadDBfetch" "profvis" 
+:2355588:2748686:153090728:901:"new_data_frame" "vec_data" "dplyr_vec_data" "dplyr_col_modify.data.frame" "summarise_build" "summarise.grouped_df" "profvis" 

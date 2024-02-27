@@ -1,0 +1,26 @@
+{
+    "id": "993B5A7E",
+    "path": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/R/umi_cluster.R",
+    "project_path": "R/umi_cluster.R",
+    "type": "r_source",
+    "hash": "2376732268",
+    "contents": "",
+    "dirty": false,
+    "created": 1705287731414.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "158,53",
+        "scrollLine": "142"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1705124284,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1705124284,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,145 @@
+#' @title readBam
+#'
+#' @description extract reads in a specific region from the bam file
+#' @details extract reads in a specific region from the bam file via Rsamtools
+#'
+#' @param bam_path The path of the input bam file
+#' @param chr The chromosome of reads located in, should be chr
+#' @param start The start position of the reads, should be int
+#' @param end The end position of the reads, should be int
+#' @param map_qual The minimum mapping quality of the reads to be extracted
+#' @importFrom Rsamtools scanBam
+#' @importFrom Rsamtools BamFile
+#' @importFrom Rsamtools ScanBamParam
+#' @importFrom Rsamtools scanBamFlag
+#' @importFrom GenomicRanges GRanges
+#' @importFrom IRanges IRanges
+#' @return return a list including read names, start positions, cigars and the sequences for all reads
+#'
+
+readBam = function(bam_path,chr,start,end, map_qual = 30){
+  bamFile <- BamFile(bam_path)
+  gr <- GRanges(seqnames = chr,
+                ranges = IRanges(start = start, end = end))
+  param <- ScanBamParam(mapqFilter = map_qual,flag=scanBamFlag(isUnmappedQuery=FALSE),
+                        what = c('qname','pos',"cigar","seq"),which = gr)
+
+  aln <- scanBam(bamFile, param = param)
+  return(aln[[1]])
+}
+
+
+
+#' @importFrom BSgenome getSeq
+mid_polyA_filter = function(endsites, genome,chr,strand,bin = 20,thresh = 0.4){
+  endsites_uniq = unique(endsites)
+
+  flag = sapply(endsites_uniq,function(i){
+    read = as.character(getSeq(genome,chr,start = i-bin,end = i+bin,strand = strand))
+    ratio = baseCount(read,"A")/nchar(read)
+    #return(ratio)
+    return(ratio >= thresh)
+  })
+  names(flag) = endsites_uniq
+
+  flag = flag[as.character(endsites)]
+  return(flag)
+}
+
+
+#' @title gene_reads_extraction
+#'
+#' @description extract reads for a gene from the bam given the gene bed annotation
+#' @details extract reads information for a gene from the bam given the gene bed annotation, including
+#' the softclip sequence which contains cell barcode and UMI, exon bins and polyA existence
+#'
+#' @inheritParams readBam
+#' @param gene_bed The gene bed annotation, should be a dataframe
+#' @param toolkit The position of cell barcode and UMI, should only be 5 or 3 end for a library
+#' @param softclip_search_len The length of the softclips to preserve, cell barcode and UMI should be within this region
+#' @param end_flank The maximum threshold for a read to exceed the end of the gene region annotation
+#' @param polyA_bin The bin size of the window to search polyA
+#' @param polyA_count The minimum length requirement for continous polyA in the search window to conclude the existence of polyA
+#' @param polyA_len The bin size to remove polyA sequence
+#' @param splice_site_bin The bin size to correct slice sites given the splice sites annotation from the gene bed
+#' @import dplyr
+#' @return A dataframe including the softclips, exons, and polyA existence, each row is a read.
+#'
+
+gene_reads_extraction = function(bam_path,gene_bed,genome,
+                                 toolkit = 5,
+                                 map_qual = 30,softclip_search_len = 55,
+                                 end_flank = 200,
+                                 polyA_bin = 20,polyA_count = 15,
+                                 polyA_len = 10,
+                                 splice_site_bin = 2,
+                                 mid_polyA_bin = 20,
+                                 mid_polyA_thresh = 0.4){
+  chr = unique(gene_bed$chr)[1]
+  start = min(gene_bed$start)
+  end = max(gene_bed$end)
+
+  exon_bin = as.matrix(gene_bed[,c("start","end")])
+  strand = as.character(unique(gene_bed$strand))
+
+  bam = readBam(bam_path,chr = chr,start = start,end = end,map_qual = map_qual)
+  reads = extractReads(as.character(bam$seq),bam$cigar,bam$pos,
+                       exon_bin,strand,toolkit,
+                       softclip_search_len,end_flank,
+                       polyA_bin,polyA_count,
+                       polyA_len,splice_site_bin)
+  reads = as.data.frame(cbind(bam$qname[reads$id],reads %>% dplyr::select(-id)))
+  colnames(reads)[1] = "qname"
+
+  reads = reads %>% filter(nchar(softclip) >= 26 & nchar(isoform) > 0)
+  if(nrow(reads) == 0){
+    return(reads)
+  }
+  # return(reads)
+  flags = mid_polyA_filter(reads$isoend,genome,chr,strand,
+                           mid_polyA_bin,mid_polyA_thresh)
+  reads$polyA[flags] = "0"
+
+  return(reads)
+}
+
+
+#' @title reads_extraction
+#'
+#' @description extract reads for multiple genes from the bam given the gene bed annotation
+#' @details extract reads information for multiple genes from the bam given the gene bed annotation, including
+#' the softclip sequence which contains cell barcode and UMI, exon bins and polyA existence
+#'
+#' @inheritParams gene_reads_extraction
+#' @import dplyr
+#' @return A dataframe including the softclips, exons, and polyA existence, each row is a read.
+#' @export
+#'
+
+reads_extraction = function(bam_path,gene_bed,genome,toolkit = 5,
+                                 map_qual = 30,softclip_search_len = 55,
+                                 end_flank = 200,
+                                 polyA_bin = 20,polyA_count = 15,
+                                 polyA_len = 10,
+                                 splice_site_bin = 2){
+  genes = unique(gene_bed$gene)
+
+  reads = lapply(genes,function(i){
+    sub_bed = gene_bed %>% filter(gene == i)
+    sub_reads = gene_reads_extraction(bam_path = bam_path,gene_bed = sub_bed,
+                                      genome = genome,
+                                      toolkit = toolkit,map_qual = map_qual,
+                                      softclip_search_len = softclip_search_len,
+                                      end_flank = end_flank,
+                                      polyA_bin = polyA_bin,polyA_len = polyA_len,
+                                      splice_site_bin = splice_site_bin)
+    if(nrow(sub_reads) == 0){
+      return(NULL)
+    }
+    sub_reads$gene = i
+    return(sub_reads)
+  })
+
+  reads = as.data.frame(do.call(rbind,reads))
+  return(reads)
+}

@@ -3,7 +3,7 @@
 #' @description Check if the running platform has required number cores
 #' @details Check if the running platform has required number cores, if not will use the maximum
 #'
-#' @param cores
+#' @param cores Number of cores used to do parallization.
 #' @importFrom parallel detectCores
 coreDetect = function(cores){
   max_cores = detectCores()

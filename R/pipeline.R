@@ -201,7 +201,6 @@ bamGeneCoverage = function(bam,gene_range_bed,outdir,bedtools = "bedtools"){
 #' @inheritParams fastqMap
 #' @inheritParams reads_extraction
 #' @inheritParams BarcodeFilter
-#' @param path
 #' @import Longcellsrc
 #' @importFrom BSgenome getBSgenome
 #' @return A list with two dataframes: the first one records the barcode, UMI and isoform information
@@ -252,25 +251,26 @@ reads_extract_bc = function(fastq_path,barcode_path,
                     cores = cores)
   end_time <- Sys.time()
   duration = end_time-start_time
-  sprintf('Barcode match took %.2f %s\n', duration, units(duration))
+  log = sprintf('Barcode match took %.2f %s\n', duration, units(duration))
+  cat(log,"\n")
 
-  # fastq mapping
-  cat("Start to map polished fastq to genome:")
-  start_time <- Sys.time()
-  cache = fastqMap(fastq = file.path(work_dir,"polish.fq.gz"),
-                   out_name = file.path(work_dir,"bam/polish.bam"),
-                   genome_path = genome_path,bed_path = minimap_bed_path,
-                   minimap2 = minimap2,samtools = samtools,
-                   minimap2_thread = cores,samtools_thread = cores)
-  end_time <- Sys.time()
-  duration = end_time-start_time
-  sprintf('Genome mapping took %.2f %s\n', duration, units(duration))
+  #   # fastq mapping
+  #   cat("Start to map polished fastq to genome:")
+  #   start_time <- Sys.time()
+  #   cache = fastqMap(fastq = file.path(work_dir,"polish.fq.gz"),
+  #                    out_name = file.path(work_dir,"bam/polish.bam"),
+  #                    genome_path = genome_path,bed_path = minimap_bed_path,
+  #                    minimap2 = minimap2,samtools = samtools,
+  #                    minimap2_thread = cores,samtools_thread = cores)
+  #   end_time <- Sys.time()
+  #   duration = end_time-start_time
+  #   sprintf('Genome mapping took %.2f %s\n', duration, units(duration))
 
-  gene_range = gene_bed %>% group_by(gene) %>% summarise(chr = unique(chr),start = min(start),
-                                                         end = max(end),strand = unique(strand))
-  gene_range = gene_range[,c("chr","start","end","strand","gene")]
-  write.table(gene_range,file.path(work_dir,"annotation/gene_range"),sep = "\t",quote = FALSE,
-              row.names = FALSE,col.names = FALSE)
+  #   gene_range = gene_bed %>% group_by(gene) %>% summarise(chr = unique(chr),start = min(start),
+  #                                                          end = max(end),strand = unique(strand))
+  #   gene_range = gene_range[,c("chr","start","end","strand","gene")]
+  #   write.table(gene_range,file.path(work_dir,"annotation/gene_range"),sep = "\t",quote = FALSE,
+  #               row.names = FALSE,col.names = FALSE)
 
   gene_cover = bamGeneCoverage(bam = file.path(work_dir,"bam/polish.bam"),
                                gene_range_bed = file.path(work_dir,"annotation/gene_range"),
@@ -288,17 +288,18 @@ reads_extract_bc = function(fastq_path,barcode_path,
                            map_qual = map_qual,end_flank = end_flank,
                            splice_site_bin = splice_site_bin)
 
-  reads_bc = left_join(reads,bc,by = c("name" = "qname"))
+  reads_bc = inner_join(bc,reads,by = c("name" = "qname"))
   reads_bc = reads_bc %>%
              mutate(polyA.x = as.numeric(polyA.x),polyA.y = as.numeric(polyA.y)) %>%
              mutate(polyA = polyA.x & polyA.y) %>% dplyr::select(-polyA.x,-polyA.y)
   end_time <- Sys.time()
   duration = end_time-start_time
-  sprintf('Isoform extraction took %.2f %s\n', duration, units(duration))
+  log = sprintf('Isoform extraction took %.2f %s\n', duration, units(duration))
+  cat(log,"\n")
 
   if(nrow(reads_bc) > 0){
     # evaluate data quality
-    ad = adapter_dis(data = reads_bc,UMI_len = UMI_len,flank = flank)
+    ad = adapter_dis(data = reads_bc,UMI_len = UMI_len,flank = UMI_flank)
 
     #reads_bc = reads_bc %>% dplyr::select(qname,barcode,gene,isoform,umi,polyA)
     saveResult(reads_bc,file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt"))
@@ -346,6 +347,8 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
 
   gene_strand = unique(gene_bed[,c(bed_gene_col,bed_strand_col)])
 
+  cat("Start to do UMI deduplication:")
+  start_time <- Sys.time()
   count = future_lapply(data_split,function(x){
     sub_count = umi_count(x,qual,gene_strand,
                           bar = bar,gene = gene,
@@ -360,9 +363,15 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
     }
     return(sub_count)
   },future.packages = c("Longcellsrc"),future.seed=TRUE)
+  end_time <- Sys.time()
+  duration = end_time-start_time
+  log = sprintf('UMI deduplication took %.2f %s\n', duration, units(duration))
+  cat(log,"\n")
 
   if(to_isoform){
     if(!is.null(gtf)){
+      cat("Start to do isoform alignment:")
+      start_time <- Sys.time()
       count_mat = future_lapply(count,function(x){
         if(is.null(x)){
           return(NULL)
@@ -383,6 +392,11 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
       count_mat = as.data.frame(do.call(dplyr::bind_rows,count_mat))
       count_mat[is.na(count_mat)] = 0
       saveResult(count_mat,file.path(dir,"iso_count_mat.txt"))
+
+      end_time <- Sys.time()
+      duration = end_time-start_time
+      log = sprintf('Isoform alignment took %.2f %s\n', duration, units(duration))
+      cat(log,"\n")
     }
     else{
       warning("The gtf annotation is not provided for the isoform imputation, will skip this step!")

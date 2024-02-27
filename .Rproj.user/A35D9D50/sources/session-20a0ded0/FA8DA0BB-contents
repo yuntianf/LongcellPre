@@ -1,0 +1,180 @@
+#' @title readBam
+#'
+#' @description extract reads in a specific region from the bam file
+#' @details extract reads in a specific region from the bam file via Rsamtools
+#'
+#' @param bam_path The path of the input bam file
+#' @param chr The chromosome of reads located in, should be chr
+#' @param start The start position of the reads, should be int
+#' @param end The end position of the reads, should be int
+#' @param map_qual The minimum mapping quality of the reads to be extracted
+#' @importFrom Rsamtools scanBam
+#' @importFrom Rsamtools BamFile
+#' @importFrom Rsamtools ScanBamParam
+#' @importFrom Rsamtools scanBamFlag
+#' @importFrom GenomicRanges GRanges
+#' @importFrom IRanges IRanges
+#' @return return a list including read names, start positions, cigars and the sequences for all reads
+#'
+
+readBam = function(bam_path,chr,start,end, strand, map_qual = 30){
+  bamFile <- BamFile(bam_path)
+  gr <- GRanges(seqnames = chr,
+                ranges = IRanges(start = start, end = end))
+  if(strand == "+"){
+    param <- ScanBamParam(mapqFilter = map_qual,flag=scanBamFlag(isUnmappedQuery=FALSE,isMinusStrand = FALSE),
+                          what = c('qname','pos',"cigar","seq"),which = gr)
+  }
+  else if(strand == "-"){
+    param <- ScanBamParam(mapqFilter = map_qual,flag=scanBamFlag(isUnmappedQuery=FALSE,isMinusStrand = TRUE),
+                          what = c('qname','pos',"cigar","seq"),which = gr)
+  }
+  else{
+    stop("The strand of mapping should be either + or -!")
+  }
+
+  aln <- scanBam(bamFile, param = param)
+  return(aln[[1]])
+}
+
+
+#' @title mid_polyA_filter
+#'
+#' @description Judge if the polyA sites for a series of reads are real.
+#' @details For the potential polyA sites in each read, this function check if the genome
+#' sequence is enriched with A. If it is, the potential polyA site will be denied.
+#'
+#' @param endsites A vector of sites recording the end position for each read.
+#' @param genome The genome annotation from BSgenome.
+#' @param chr The chromsome of the gene to be checked.
+#' @param strand The strand of the gene to be checked.
+#' @param bin The window size to search for A
+#' @param thresh The maximum threshold of the frequency of A in the search window.
+#' @importFrom BSgenome getSeq
+#' @return return bool vector to indicate if the polyA sites are real.
+mid_polyA_filter = function(endsites, genome,chr,strand,bin = 20,thresh = 0.4){
+  endsites_uniq = unique(endsites)
+  read = as.character(getSeq(genome,chr,start = min(endsites_uniq)-bin,
+                             end = max(endsites_uniq)+bin,strand = strand))
+  endsites_offset = endsites_uniq-min(endsites_uniq)+bin
+  flag = sapply(endsites_offset,function(i){
+    sub_read = substr(read,start = i-bin+1,stop = i+bin)
+    ratio = baseCount(sub_read,"A")/nchar(sub_read)
+    #return(ratio)
+    return(ratio >= thresh)
+  })
+  names(flag) = endsites_uniq
+
+  flag = flag[as.character(endsites)]
+  return(flag)
+}
+
+
+#' @title gene_reads_extraction
+#'
+#' @description extract reads for a gene from the bam given the gene bed annotation
+#' @details extract reads information for a gene from the bam given the gene bed annotation, including
+#' exon bins and polyA existence
+#'
+#' @inheritParams readBam
+#' @inheritParams mid_polyA_filter
+#' @param gene_bed The gene bed annotation, should be a dataframe
+#' @param toolkit The position of cell barcode and UMI, should only be 5 or 3 end for a library
+#' @param end_flank The maximum threshold for a read to exceed the end of the gene region annotation
+#' @param splice_site_bin The bin size to correct slice sites given the splice sites annotation from the gene bed
+#' @param mid_polyA_bin The window size to search for A
+#' @param mid_polyA_thresh The maximum threshold of the frequency of A in the search window.
+#' @import dplyr
+#' @return A dataframe including the , exons, and polyA existence, each row is a read.
+#'
+gene_reads_extraction = function(bam_path,gene_bed,genome,
+                                 toolkit = 5,
+                                 map_qual = 30,
+                                 end_flank = 200,
+                                 splice_site_bin = 2,
+                                 mid_polyA_bin = 20,
+                                 mid_polyA_thresh = 0.4){
+  chr = unique(gene_bed$chr)[1]
+  start = min(gene_bed$start)
+  end = max(gene_bed$end)
+
+  exon_bin = as.matrix(gene_bed[,c("start","end")])
+  strand = as.character(unique(gene_bed$strand))
+
+  #start_time <- Sys.time()
+  bam = readBam(bam_path,chr = chr,start = start,end = end,strand = strand,map_qual = map_qual)
+  #end_time <- Sys.time()
+  #print(paste("readbam:",end_time - start_time))
+
+  #cat("There are ",length(as.character(bam$seq))," sequence mapped!\n")
+
+  #start_time <- Sys.time()
+  reads = extractReads(as.character(bam$seq),bam$cigar,bam$pos,
+                       exon_bin,strand,toolkit,
+                       end_flank,splice_site_bin)
+  #end_time <- Sys.time()
+  #print(paste("extract:",end_time - start_time))
+
+  reads = as.data.frame(cbind(bam$qname[reads$id],reads %>% dplyr::select(-id)))
+  colnames(reads)[1] = "qname"
+
+  reads = reads %>% filter(nchar(isoform) > 0)
+  if(nrow(reads) == 0){
+    return(reads)
+  }
+  # return(reads)
+  #start_time <- Sys.time()
+  flags = mid_polyA_filter(reads$isoend,genome,chr,strand,
+                           mid_polyA_bin,mid_polyA_thresh)
+  #end_time <- Sys.time()
+  #print(paste("filter:",end_time - start_time))
+
+  reads$polyA[flags] = "0"
+
+  return(reads)
+}
+
+
+#' @title reads_extraction
+#'
+#' @description extract reads for multiple genes from the bam given the gene bed annotation
+#' @details extract reads information for a gene from the bam given the gene bed annotation, including
+#' exon bins and polyA existence
+#'
+#' @inheritParams gene_reads_extraction
+#' @param cores The number of cores for parallization
+#' @import dplyr
+#' @importFrom future.apply future_lapply
+#' @return A dataframe including the exons, and polyA existence, each row is a read.
+#' @export
+#'
+
+reads_extraction = function(bam_path,gene_bed,genome,toolkit = 5,
+                                 map_qual = 30,end_flank = 200,
+                                 splice_site_bin = 2,
+                                 mid_polyA_bin = 20,
+                                 mid_polyA_thresh = 0.4){
+  genes = unique(gene_bed$gene)
+
+  reads = future_lapply(genes,function(i){
+    sub_bed = gene_bed %>% filter(gene == i)
+    #start_time <- Sys.time()
+    sub_reads = gene_reads_extraction(bam_path = bam_path,gene_bed = sub_bed,
+                                      genome = genome,
+                                      toolkit = toolkit,map_qual = map_qual,
+                                      end_flank = end_flank,
+                                      splice_site_bin = splice_site_bin,
+                                      mid_polyA_bin = mid_polyA_bin,
+                                      mid_polyA_thresh = mid_polyA_thresh)
+    #end_time <- Sys.time()
+    #print(paste(i,":",end_time - start_time))
+    if(nrow(sub_reads) == 0){
+      return(NULL)
+    }
+    sub_reads$gene = i
+    return(sub_reads)
+  },future.packages = c("Longcellsrc"),future.seed=TRUE)
+
+  reads = as.data.frame(do.call(rbind,reads))
+  return(reads)
+}

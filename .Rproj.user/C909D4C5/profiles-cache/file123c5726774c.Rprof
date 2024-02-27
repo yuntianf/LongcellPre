@@ -1,0 +1,3 @@
+memory profiling: GC profiling: line profiling: sample.interval=10000
+#File 1: <expr>
+:2100779:2062370:129460744:2774:"findCenvVar" "getInlineInfo" "tryInline" "cmpCall" "cmp" "h" "tryInline" "cmpCall" "cmp" "genCode" "cmpfun" "compiler:::tryCmpfun" 1#2 "profvis" 

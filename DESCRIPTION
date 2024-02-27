@@ -11,3 +11,4 @@ Encoding: UTF-8
 LazyData: true
 Imports: stats4, Rcpp, dbscan, e1071, dplyr, reshape2, tidyr, transport, RcppHungarian, NameNeedle, igraph, MASS, parallel, Rsamtools, GenomicRanges, IRanges, future, future.apply
 LinkingTo: Rcpp, RcppEigen
+RoxygenNote: 7.2.1

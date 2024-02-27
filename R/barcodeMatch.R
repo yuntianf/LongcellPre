@@ -67,7 +67,7 @@ BarcodeFilter = function(data,mean_edit_thresh = 1.5){
 #'
 #' @inheritParams BarcodeMatchUnit
 #' @inheritParams BarcodeFilter
-#' @params cores The number of cores to use for parallelization
+#' @param cores The number of cores to use for parallelization
 #' @importFrom Longcellsrc barcodeMatch
 #' @importFrom future.apply future_lapply
 #' @importFrom parallel detectCores

@@ -1,0 +1,91 @@
+#' @title BarcodeMatchUnit
+#'
+#' @description Find the cell barcode within the softclips given the cell barcode whitelist
+#' @details Find the cell barcode within the softclips given the cell barcode whitelist and the extract the UMI
+#' sequence after cell barcodes for further UMI deduplication
+#'
+#' @param data A dataframe contains softclips
+#' @param barcodes A character vector of cell barcode
+#' @param mu The mean end location of cell barcode in the softclip, using the middle sites of the softclip as default
+#' @param sigma The start variance for the end position distribution
+#' @param sigma_start The variance to buffer at first to avoid sudden convergence of variance
+#' @param k The length of sub string match between softclips and barcodes,
+#' only softclips and barcodes with high enough kmer match will be further validated
+#' @param batch The number of softclips to search in one run
+#' @param top Barcodes with top n cos similarity will be used for further validation
+#' @param cos_thresh The minimum threshold of the cos similariy to preserve the cell barcode for further validation
+#' @param alpha The probability thresh to filter out barcode match, matches
+#' with too high edit distance or too far position have low probability to be correct
+#' @param edit_thresh The highest tolerance of edit distance for the barcode match
+#' @param UMI_len The length of the UMI sequence
+#' @param UMI_flank The length of the flank to add to tolerate the insertions and deletions around UMI
+#' @return A dataframe contains matched cell barcode, the position of the barcode, UMI and the edit distance of the match.
+#'
+BarcodeMatchUnit = function(data, barcodes,mu = 27, sigma = 10, sigma_start = 10,
+                        k = 6, batch = 100,top = 5, cos_thresh = 0.25, alpha = 0.05,
+                        edit_thresh = 4,UMI_len = 10,UMI_flank = 1){
+  barcode = barcodeMatch(data$softclip,barcodes,mu, sigma, sigma_start,
+                         k, batch,top, cos_thresh, alpha,edit_thresh)
+
+  data = cbind(data[barcode$id+1,],barcode[,c("barcode","end","edit")])
+
+  umi_start = data$end
+
+  umi = UMIextract(data$softclip,umi_start,UMI_len,UMI_flank)
+  data = cbind(data[umi$id,],umi$umi)
+  colnames(data)[ncol(data)] = "umi"
+
+  #data = data[,-which(colnames(data) == "softclip")]
+  return(data)
+}
+
+#' @title BarcodeMatch
+#'
+#' @description BarcodeMatch with parallelization
+#' @details BarcodeMatch for large dataset which is paralleled by future.apply. Large data will be split according to cores.
+#'
+#' @inheritParams BarcodeMatchUnit
+#' @params cores The number of cores to use for parallelization
+#' @importFrom future sequential
+#' @importFrom future multisession
+#' @importFrom future.apply future_lapply
+#' @importFrom parallel detectCores
+#' @export
+BarcodeMatch = function(data, barcodes,
+                        mu = 23, sigma = 10, sigma_start = 10,
+                        k = 8, batch = 50,top = 5, cos_thresh = 0.25, alpha = 0.05,
+                        edit_thresh = 4,mean_edit_thresh = 1.5,
+                        UMI_len = 10,UMI_flank = 1,cores = 1){
+  cores = coreDetect(cores)
+
+  num_splits <- cores
+  group_size = ceiling(nrow(data)/num_splits)
+  data_split <- split(data, rep(1:num_splits, each = group_size, length.out = nrow(data)))
+
+  if(cores == 1){
+    plan(sequential)
+  }
+  else if(cores > 1){
+    plan(multisession,workers = cores)
+  }
+  bm = future_lapply(data_split,function(x){
+    out = barcodeMatch(x$softclip,barcodes,mu, sigma, sigma_start,
+                 k, batch,top, cos_thresh, alpha,edit_thresh)
+
+    x = cbind(x[out$id+1,],out[,c("barcode","end","edit")])
+
+    umi_start = x$end
+
+    umi = UMIextract(x$softclip,umi_start,UMI_len,UMI_flank)
+
+    x = cbind(x[umi$id,],umi$umi)
+    colnames(x)[ncol(x)] = "umi"
+    return(x)
+  },future.seed=TRUE)
+
+  bm = do.call(rbind,bm)
+  bm = bm[,-which(colnames(bm) == "softclip")]
+
+  bm = BarcodeFilter(bm,mean_edit_thresh)
+  return(bm)
+}

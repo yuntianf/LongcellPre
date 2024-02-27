@@ -1,0 +1,49 @@
+#include <Rcpp.h>
+#include <iostream>
+#include <string>
+#include <regex>
+#include <algorithm>
+
+using namespace Rcpp;
+using namespace std;
+
+int baseCount(std::string seq, char base);
+std::string reverseComplement(const std::string& sequence);
+std::string replicate(std::string mode,int times);
+bool within(int posA,int posB,const int bin = 2);
+int seqEnd(int start,StringVector mark,NumericVector count);
+
+List cigarProcess(std::string cigar);
+bool cigarcheck(StringVector mark,NumericVector count);
+
+int isoformEnd(NumericMatrix isoform, std::string strand);
+std::string isoform2string(NumericMatrix isoform,std::string sep = "|");
+NumericMatrix extractIsoform(int read_start,
+                             StringVector mark, NumericVector count,
+                             int refer_start, int refer_end,
+                             int flank = 200);
+NumericMatrix chopOutBound(NumericMatrix isoform,NumericMatrix annotation,string strand);
+NumericMatrix splicesiteCorrect(NumericMatrix isoform,NumericMatrix annotation,
+                                string strand,int bin = 2);
+
+bool polyADetect(std::string seq,int bin = 20, int count = 15,char base = 'A');
+std::string polyARm(std::string seq, int polyA_len = 10);
+
+std::vector<std::string> extractSoftclip(std::string seq,StringVector mark,NumericVector count,
+                                         const std::string strand,int toolkit,
+                                         const int search_len = 55,const int polyA_bin = 20,
+                                         const int polyA_count = 15,const int polyA_len = 10);
+
+std::string extractTag(std::string seq,const std::string adapter, const int toolkit,
+                       const int window = 12, const int step = 6,const int len = 55);
+
+int strSlideSearch(std::string seq,const std::string adapter,
+                   const int window = 12, const int step = 6);
+
+std::vector<std::string> strSubset(std::string str,const int window, const int step);
+
+DataFrame extractReads(std::vector<std::string> seq,std::vector<std::string> cigar,NumericVector pos,
+                       NumericMatrix annotation,const std::string strand,
+                       int toolkit,const int softclip_search_len = 55,
+                       int end_flank = 200,
+                       int polyA_bin = 20,int polyA_count = 15,int polyA_len = 10,int splice_site_bin = 2);

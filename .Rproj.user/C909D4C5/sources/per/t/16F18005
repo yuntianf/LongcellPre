@@ -1,0 +1,26 @@
+{
+    "id": "16F18005",
+    "path": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/src/umi_dist.cpp",
+    "project_path": "src/umi_dist.cpp",
+    "type": "cpp",
+    "hash": "654551951",
+    "contents": "",
+    "dirty": false,
+    "created": 1705116452265.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "429,58",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1705116511,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1705116511356,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,26 @@
+{
+    "id": "83C92CE8",
+    "path": "C:/D/Necessary/Upenn/Thesis/projects/Single-cell-Long-reads/methods/LongcellPre/R/transcript_impute.R",
+    "project_path": "R/transcript_impute.R",
+    "type": "r_source",
+    "hash": "3841580351",
+    "contents": "",
+    "dirty": false,
+    "created": 1703346547486.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "123,38",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1703176506,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1703176506,
+    "read_only": false,
+    "read_only_alternatives": []
+}

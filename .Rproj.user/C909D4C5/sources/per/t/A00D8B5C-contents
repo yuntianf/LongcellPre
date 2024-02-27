@@ -1,0 +1,192 @@
+#' @title reads_extract_bc
+#'
+#' @description
+#' @details
+#'
+#' @param path
+#' @import dplyr
+#'
+#' @importFrom BSgenome getBSgenome
+#'
+#' @importFrom future sequential
+#' @importFrom future multisession
+#' @importFrom future multicore
+#' @importFrom future.apply future_lapply
+#' @export
+#'
+reads_extract_bc = function(bam_path,gene_bed,barcodes,
+                            genome_name,
+                            # parameters for reads extraction
+                            toolkit = 5,
+                            map_qual = 30,softclip_search_len = 55,
+                            end_flank = 200,
+                            polyA_bin = 20,polyA_count = 15,
+                            polyA_len = 10,
+                            splice_site_bin = 2,
+                            # parameters for barcode match
+                            mu = 27, sigma = 10, sigma_start = 10,
+                            k = 6, batch = 100,top = 5, cos_thresh = 0.25, alpha = 0.05,
+                            edit_thresh = 4,mean_edit_thresh = 1.5,
+                            UMI_len = 10,UMI_flank = 1,
+                            # parameters for parallel
+                            cores = 1,
+                            mode = c("sequential","multisession","multicore")
+                            ){
+  cores = coreDetect(cores)
+  mode = match.arg(mode,c("sequential","multisession","multicore"))
+
+  if(cores > 1 & mode == "sequential"){
+    warning("Set more than one core to use, will use multisession mode instead!")
+    mode = "multisession"
+  }
+
+  genes = unique(gene_bed$gene)
+  chunks = max(5*cores,length(genes))
+  gene_list = split(genes, ceiling(seq_along(genes)/chunks))
+
+  genome<-getBSgenome(genome_name)
+
+  if(mode == "sequential"){
+    plan(strategy = mode)
+  }
+  else{
+    plan(strategy = mode,workers = cores)
+  }
+
+  reads_bc = future_lapply(gene_list,function(i){
+    sub_bed = gene_bed %>% filter(gene %in% i)
+    sub_reads = reads_extraction(bam_path,sub_bed,genome,
+                                 toolkit = toolkit,
+                                 map_qual = map_qual,
+                                 softclip_search_len = softclip_search_len,
+                                 end_flank = end_flank,
+                                 polyA_bin = polyA_bin,
+                                 polyA_count = polyA_count,
+                                 polyA_len = polyA_len,
+                                 splice_site_bin = splice_site_bin)
+
+    if(nrow(sub_reads) == 0){
+      return(NULL)
+    }
+
+    sub_reads_bc = BarcodeMatchUnit(sub_reads,barcodes,mu = mu, sigma = sigma,
+                                sigma_start = sigma_start,
+                                k = k, batch = batch,top = top, cos_thresh = cos_thresh,
+                                alpha = alpha,edit_thresh = edit_thresh,
+                                UMI_len = UMI_len,UMI_flank = UMI_flank)
+
+    cat(nrow(sub_reads)," are extracted and within them ",nrow(sub_reads_bc), " are identified with a barcode.\n")
+
+    return(sub_reads_bc)
+  },future.seed=TRUE,future.packages = c("Rsamtools","GenomicRanges","IRanges"))
+
+  reads_bc = as.data.frame(do.call(rbind,reads_bc))
+  # return(reads_bc)
+  ad = NULL
+  if(nrow(reads_bc) > 0){
+    reads_bc = BarcodeFilter(reads_bc,mean_edit_thresh)
+    cat("After filtering, ",nrow(reads_bc),
+        " reads with barcodes are preserved, with mean edit distance as ",mean(reads_bc$edit),".\n")
+    ad = adapter_dis(reads_bc,UMI_len,UMI_flank)
+    #reads_bc = reads_bc %>% dplyr::select(qname,barcode,gene,isoform,umi,polyA)
+  }
+
+  return(list(reads_bc,ad))
+}
+
+#' @title umi_count_parallel
+#'
+#' @description
+#' @details
+#'
+#' @param path
+#' @import dplyr
+
+#' @importFrom future sequential
+#' @importFrom future multisession
+#' @importFrom future multicore
+#' @importFrom future.apply future_lapply
+#' @export
+#'
+
+umi_count_corres = function(data,qual,gene_bed = NULL,gtf = NULL,gene_strand = NULL,
+                                     # parameter for umi count
+                                     bar = "barcode",gene = "gene",
+                                     isoform = "isoform",polyA = "polyA",
+                                     sim_thresh = 7, split = "|",sep = ",",
+                                     splice_site_thresh = 10,verbose = FALSE,
+                                     # parameter for exon corres
+                                     to_exon = FALSE,
+                                     bed_gene_col = "gene",bed_start = "start",
+                                     bed_end = "end",id = "id",bed_strand = "strand",
+                                     mid_bias = 0,end_bias = 10,
+                                     end_overlap =10,nonsense_label = "N",
+                                     #parameter for mapping to transcript
+                                     to_isoform = FALSE,
+                                     gtf_gene_col = "gene",gtf_start_col = "start",
+                                     gtf_end_col = "end",transname = "transname",
+                                     #parameter for parallel
+                                     cores = 1,
+                                     mode = c("sequential","multisession","multicore")){
+  cores = coreDetect(cores)
+  data_split = genes_distribute(data,cores,gene)
+
+  mode = match.arg(mode,c("sequential","multisession","multicore"))
+
+  if(cores > 1 & mode == "sequential"){
+    warning("Set more than one core to use, will use multisession mode instead!")
+    mode = "multisession"
+  }
+  if(mode == "sequential"){
+    plan(strategy = mode)
+  }
+  else{
+    plan(strategy = mode,workers = cores)
+  }
+
+  if(is.null(gene_bed) & is.null(gene_strand)){
+    stop("The gene strand information is necessary, at least one of gene_bed or gene_strand should be provided!")
+  }
+  if(is.null(gene_strand) & !is.null(gene_bed)){
+    gene_strand = unique(gene_bed[,c(bed_gene_col,bed_strand)])
+  }
+  count = future_lapply(data_split,function(x){
+    sub_count = umi_count(x,qual,gene_strand,
+                          bar = bar,gene = gene,
+                          isoform = isoform,polyA = polyA,
+                          sim_thresh = sim_thresh,
+                          split = split,sep = sep,
+                          splice_site_thresh = splice_site_thresh,
+                          verbose = verbose)
+
+    if(length(sub_count) == 0 || nrow(sub_count) == 0){
+      return(NULL)
+    }
+
+    if(!is.null(gene_bed) & to_exon){
+      sub_count = isos2exonids(sub_count,gene_bed,
+                               gene_col = bed_gene_col,start = bed_start,
+                               end = bed_end,id = id,
+                               mid_bias = mid_bias,end_bias = end_bias,
+                               end_overlap =end_overlap,
+                               nonsense_label = nonsense_label,
+                               split = split,sep = sep)
+    }
+
+    if(!is.null(gtf) & to_exon & to_isoform){
+      sub_count = transcript_impute(sub_count,gtf = gtf,gene_bed = gene_bed,
+                                    gtf_gene_col = gtf_gene_col,gtf_start_col = gtf_start_col,
+                                    gtf_end_col = gtf_end_col,transname = transname,
+                                    bed_gene_col = bed_gene_col,bed_start = bed_start,
+                                    bed_end = bed_end,id = id,
+                                    mid_bias = mid_bias,end_bias = end_bias,
+                                    end_overlap =end_overlap,
+                                    nonsense_label = nonsense_label,
+                                    split = split,sep = sep)
+    }
+    return(sub_count)
+  },future.seed=TRUE)
+
+  count = as.data.frame(do.call(rbind,count))
+  return(count)
+}

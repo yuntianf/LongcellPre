@@ -1,19 +1,22 @@
-#' @title isos2exonids_per_gene
-#' @description map the exon to the annotated exons gene bed for one gene
-#' @details transform the exon representation from start end position to exon id in gene bed
-#' @param isoform A string vector storing isoforms
-#' @param bed gene bed annotation for the specific gene
-#' @param start the name of the column which stores the start position for each exon in the gene bed.
-#' @param end the name of the column which stores the end position for each exon in the gene bed.
-#' @param id the name of the column which stores the exon id in the gene bed.
-#' @param mid_bias The tolerance for the bias for mapping of exons in the middle of the isoform
-#' @param end_bias The tolerance for the bias for mapping of exons at the end of the isoform
-#' @param end_overlap The minimum length of the end exon
-#' @param nonsense_label The label for exons which couldn't be mapped to gene bed
-#' @param split The character to split the exons in the isoform
+#' @title iso_corres
+#' @description map the reads to the annotated isoforms for one gene
+#' @details map the reads to the annotated isoforms for one gene
+#' @param transcripts A string vector storing reads
+#' @param gene The gene name, should exist in the gtf annotation
+#' @param gtf The gtf annotation, each row is an exon for an isoform
+#' @param thresh The maximum threshold for the total offset of middle splicing sites.
+#' @param overlap_thresh The minimum threshold for the coverage of the annotated isoform.
+#' @param end_bias The maximum threshold for the offset of start and end position.
+#' @param gtf_gene_col the name of the column which stores gene name in the gtf.
+#' @param gtf_iso_col the name of the column which stores isoform name in the gtf.
+#' @param gtf_start_col the name of the column which stores the start position of exon in the gtf.
+#' @param gtf_end_col the name of the column which stores the end position of exon in the gtf.
 #' @param sep The character to split the start and end position for each exon in the isoform.
-#' @return A named vector storing isoforms in exon id form.
-iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.5,
+#' @param split The character to split the exons in the isoform
+#' @return A dataframe with two columns, the first column records the reads, the second column records the isoform
+#' the read could align to.
+#' @export
+iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.25,
                       end_bias = 200,
                       gtf_gene_col = "gene",gtf_iso_col = "transname",
                       gtf_start_col = "start",gtf_end_col = "end",
@@ -49,6 +52,11 @@ iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.5,
   return(transcripts_iso_corres)
 }
 
+#' @title cell_iso_count_impute
+#' @description imputate the isoform count for one gene in a cell.
+#' @details Some truncated reads can have ambigous alignment to multiple annotated isoforms, this function will
+#' iterative imputate the isoform count based on non-ambigous alignment.
+#' @param data The input dataframe, including the reads, reads count and its aligned annotated isoform.
 cell_iso_count_impute = function(data){
   colnames(data) = c("isoform","overlap","level","count")
 
@@ -82,6 +90,15 @@ cell_iso_count_impute = function(data){
   return(isoform_count)
 }
 
+#' @title iso_count_impute
+#' @description imputate the isoform count for one gene in multiple cells.
+#' @details Some truncated reads can have ambigous alignment to multiple annotated isoforms, this function will
+#' iterative imputate the isoform count based on non-ambigous alignment.
+#' @inheritParams cell_iso_count_impute
+#' @param cell_col The name of the column in the input data which records the cell barcode.
+#' @param iso_col The name of the column in the input data which records the isoform.
+#' @param overlap_col The name of the column in the input data which records the ratio of coverage.
+#' @param count_col The name of the column in the input data which records the reads count.
 iso_count_impute = function(data,cell_col = "cell",
                             iso_col = "isoform",overlap_col = "overlap",
                             count_col = "count"){
@@ -106,7 +123,16 @@ iso_count_impute = function(data,cell_col = "cell",
   return(count_impute)
 }
 
-cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.5,
+#' @title cells_genes_isos_count
+#' @description imputate the isoform count for multiple genes in multiple cells.
+#' @details Some truncated reads can have ambigous alignment to multiple annotated isoforms, this function will
+#' iterative imputate the isoform count based on non-ambigous alignment.
+#' @inheritParams iso_corres
+#' @inheritParams iso_count_impute
+#' @param gene_col The name of the column in the input data which records the gene name.
+#' @param transcript_col The name of the column in the input data which records the isoform.
+#' @export
+cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
                                   cell_col = "cell",gene_col = "gene",
                             transcript_col = "isoform",count_col = "count",
                             gtf_gene_col = "gene",gtf_iso_col = "transname",

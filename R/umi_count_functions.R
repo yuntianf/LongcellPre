@@ -153,7 +153,6 @@ umi_count <- function(cell_exon,qual, gene_strand,
       if(verbose){
         cat(i,"\n")
       }
-        flush.console()
         sub_cell_exon = cell_exon[cell_exon[,gene] == i,]
         strand = unique(gene_strand[gene_strand$gene == i,"strand"])
         if(nrow(sub_cell_exon) < splice_site_thresh){
