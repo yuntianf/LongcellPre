@@ -104,6 +104,7 @@ createSNN <- function(dis,count = NULL,self = FALSE){
 #' @import dplyr
 #' @importFrom igraph as_long_data_frame
 #' @importFrom igraph edge_attr
+#' @importFrom igraph vertex_attr
 SNN_graph <- function(graph){
     vertex = vertex_attr(graph)$name
     count = vertex_attr(graph)$count
@@ -184,7 +185,7 @@ louvain_iter_stack <- function(graph,weight = "weight",
 #' @details each sub-graph in the list represents a cluster, this function assigns the cluster id
 #' for nodes within those sub-graphs.
 #' @param graph_list a list of igraph object, each object represents a cluster.
-#' @import igraph vertex_attr
+#' @importFrom igraph vertex_attr
 graph_to_cluster <- function(graph_list){
     out <- lapply(1:length(graph_list),function(i){
         cluster = graph_list[[i]]
