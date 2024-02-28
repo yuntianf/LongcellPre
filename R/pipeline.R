@@ -110,12 +110,12 @@ createAnnotation = function(gtf_path = NULL,gene_bed_path = NULL,work_dir = "./"
 annotation = function(gtf_path = NULL,gene_bed_path = NULL,work_dir = "./",overwrite = TRUE,
                       bed_chr_col = "chr",bed_start_col = "start",bed_end_col = "end",
                       bed_strand_col = "strand",bed_gene_col = "gene"){
-  if(file.exists(file.path(work_dir,"reference/gene_bed.rds"))){
+  if(file.exists(file.path(work_dir,"annotation/gene_bed.rds"))){
     if(!overwrite){
       warning("The annotation already exists. If you want to overwrite it please set overwrite as TRUE!")
-      gene_bed = readRDS(file.path(work_dir,"reference/gene_bed.rds"))
-      if(file.exists(file.path(work_dir,"reference/exon_gtf.rds"))){
-        gtf = readRDS(file.path(work_dir,"reference/exon_gtf.rds"))
+      gene_bed = readRDS(file.path(work_dir,"annotation/gene_bed.rds"))
+      if(file.exists(file.path(work_dir,"annotation/exon_gtf.rds"))){
+        gtf = readRDS(file.path(work_dir,"annotation/exon_gtf.rds"))
       }
       else{
         gtf = NULL
