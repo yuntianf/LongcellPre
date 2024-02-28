@@ -19,7 +19,7 @@
 #' @param edit_thresh The highest tolerance of edit distance for the barcode match
 #' @param UMI_len The length of the UMI sequence
 #' @param UMI_flank The length of the flank to add to tolerate the insertions and deletions around UMI
-#' @importFrom Longcellsrc barcodeMatch
+#' @import Longcellsrc
 #' @return A dataframe contains matched cell barcode, the position of the barcode, UMI and the edit distance of the match.
 #'
 BarcodeMatchUnit = function(seq, barcodes,
@@ -68,7 +68,7 @@ BarcodeFilter = function(data,mean_edit_thresh = 1.5){
 #' @inheritParams BarcodeMatchUnit
 #' @inheritParams BarcodeFilter
 #' @param cores The number of cores to use for parallelization
-#' @importFrom Longcellsrc barcodeMatch
+#' @import Longcellsrc
 #' @importFrom future.apply future_lapply
 #' @importFrom parallel detectCores
 #' @export
