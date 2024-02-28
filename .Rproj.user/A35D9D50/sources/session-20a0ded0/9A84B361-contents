@@ -62,7 +62,7 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
   }
 
   reads = extractTagFastq(fastq_path,out_name,
-                        adapter,window,step,len,
+                        adapter,toolkit,window,step,len,
                         polyA_bin,polyA_base_count,polyA_len)
 
   barcode = read.table(barcode_path)[,1]
