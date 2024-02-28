@@ -16,6 +16,7 @@ devtools::install_github("yuntianf/LongcellPre")
 ## Workflow
 The simplist way to run `LongcellPre` is to apply:
 ```
+library(future)
 library(Longcellsrc)
 library(LongcellPre)
 
