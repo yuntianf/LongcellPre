@@ -417,6 +417,7 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
 #' @inheritParams umi_count_corres
 #' @param ... All other tuning parameters
 #'
+#' @importFrom future plan
 #' @importFrom future sequential
 #' @importFrom future multisession
 #' @importFrom future multicore

@@ -33,6 +33,7 @@
 #'
 #' @import dplyr
 #' @importFrom stringi stri_reverse
+#' @importFrom spgs reverseComplement
 #' @importFrom future sequential
 #' @importFrom future multisession
 #' @importFrom future multicore
@@ -71,6 +72,9 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
     reads$tag = stringi::stri_reverse(reads$tag)
     barcode = stringi::stri_reverse(barcode)
   }
+  else if(toolkit == 3){
+    barcode = spgs::reverseComplement(barcode)
+  }
 
   bc = BarcodeMatch(reads$tag, barcode,
                     mu = mu, sigma = sigma, sigma_start = 10,
@@ -79,6 +83,9 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
                     UMI_len = UMI_len,UMI_flank = UMI_flank,cores = cores)
   if(toolkit == 5){
     bc$barcode = stringi::stri_reverse(bc$barcode)
+  }
+  else if(toolkit == 3){
+    bc$barcode = spgs::reverseComplement(bc$barcode)
   }
 
   bc = bc %>% filter(nchar(umi) == UMI_len+2*UMI_flank)
