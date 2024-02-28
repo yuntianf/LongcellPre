@@ -254,23 +254,23 @@ reads_extract_bc = function(fastq_path,barcode_path,
   log = sprintf('Barcode match took %.2f %s\n', duration, units(duration))
   cat(log,"\n")
 
-  #   # fastq mapping
-  #   cat("Start to map polished fastq to genome:")
-  #   start_time <- Sys.time()
-  #   cache = fastqMap(fastq = file.path(work_dir,"polish.fq.gz"),
-  #                    out_name = file.path(work_dir,"bam/polish.bam"),
-  #                    genome_path = genome_path,bed_path = minimap_bed_path,
-  #                    minimap2 = minimap2,samtools = samtools,
-  #                    minimap2_thread = cores,samtools_thread = cores)
-  #   end_time <- Sys.time()
-  #   duration = end_time-start_time
-  #   sprintf('Genome mapping took %.2f %s\n', duration, units(duration))
+  # fastq mapping
+  cat("Start to map polished fastq to genome:")
+  start_time <- Sys.time()
+  cache = fastqMap(fastq = file.path(work_dir,"polish.fq.gz"),
+                   out_name = file.path(work_dir,"bam/polish.bam"),
+                   genome_path = genome_path,bed_path = minimap_bed_path,
+                   minimap2 = minimap2,samtools = samtools,
+                   minimap2_thread = cores,samtools_thread = cores)
+  end_time <- Sys.time()
+  duration = end_time-start_time
+  sprintf('Genome mapping took %.2f %s\n', duration, units(duration))
 
-  #   gene_range = gene_bed %>% group_by(gene) %>% summarise(chr = unique(chr),start = min(start),
-  #                                                          end = max(end),strand = unique(strand))
-  #   gene_range = gene_range[,c("chr","start","end","strand","gene")]
-  #   write.table(gene_range,file.path(work_dir,"annotation/gene_range"),sep = "\t",quote = FALSE,
-  #               row.names = FALSE,col.names = FALSE)
+  gene_range = gene_bed %>% group_by(gene) %>% summarise(chr = unique(chr),start = min(start),
+                                                         end = max(end),strand = unique(strand))
+  gene_range = gene_range[,c("chr","start","end","strand","gene")]
+  write.table(gene_range,file.path(work_dir,"annotation/gene_range"),sep = "\t",quote = FALSE,
+              row.names = FALSE,col.names = FALSE)
 
   gene_cover = bamGeneCoverage(bam = file.path(work_dir,"bam/polish.bam"),
                                gene_range_bed = file.path(work_dir,"annotation/gene_range"),
