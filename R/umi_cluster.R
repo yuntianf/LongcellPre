@@ -146,6 +146,7 @@ SNN_graph <- function(graph){
 #' @importFrom igraph cluster_leiden
 #' @importFrom igraph delete_edges
 #' @importFrom igraph E
+#' @importFrom igraph V
 #' @importFrom igraph crossing
 louvain_iter_stack <- function(graph,weight = "weight",
                          resolution = 1,alpha = 2, sim_thresh = 6){
