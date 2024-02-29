@@ -23,7 +23,8 @@ gtf2bed = function(gtf_path,out_path,if_store_binary = TRUE){
   colnames(temp)[colnames(temp) == "gene_id"] = "gene"
   temp = temp %>% tidyr::unnest(gene)
   temp = as.data.frame(temp)
-  temp[,"gene"] = substr(temp[,"gene"],1,15)
+  gene_name = sapply(strsplit(temp[,"gene"],split = ".",fixed = TRUE),function(x) x[1])
+  temp[,"gene"] = gene_name
   colnames(temp)[1] <- c("chr")
 
   temp = temp %>% group_by(gene) %>% mutate(id = exon_id(unique(strand),n()))
@@ -41,7 +42,8 @@ gtf2bed = function(gtf_path,out_path,if_store_binary = TRUE){
   gtf_data = gtf_data %>% tidyr::unnest(gene_id) %>% tidyr::unnest(tx_name)
   colnames(gtf_data)[colnames(gtf_data) == "gene_id"] = "gene"
 
-  gtf_data$gene = substr(gtf_data$gene,1,15)
+  gene_name = sapply(strsplit(gtf_data$gene,split = ".",fixed = TRUE),function(x) x[1])
+  gtf_data$gene = gene_name
   gtf_data = gtf_data[,c(2:3,6:8)]
   colnames(gtf_data)[4:5] = c("transname","exon_id")
 
