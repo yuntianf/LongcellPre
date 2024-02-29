@@ -203,6 +203,7 @@ bamGeneCoverage = function(bam,gene_range_bed,outdir,bedtools = "bedtools"){
 #' @inheritParams BarcodeFilter
 #' @import Longcellsrc
 #' @importFrom BSgenome getBSgenome
+#' @importFrom peakRAM peakRAM
 #' @return A list with two dataframes: the first one records the barcode, UMI and isoform information
 #' for each read, the second one stores the needleman score distirbution for adapters as evaluation of
 #' data quality.
@@ -235,24 +236,27 @@ reads_extract_bc = function(fastq_path,barcode_path,
   # barcode match
   cat("Start to do barcode match:")
   start_time <- Sys.time()
-  bc = extractTagBc(fastq_path = fastq_path,barcode_path = barcode_path,
-                    out_name = file.path(work_dir,"polish.fq.gz"),
-                    # parameters to extract the tag region
-                    toolkit = toolkit,adapter = adapter,
-                    window = window,step = step,len = tag_len,
-                    polyA_bin = polyA_bin,
-                    polyA_base_count = polyA_base_count,polyA_len = polyA_len,
-                    # parameters for barcode match
-                    mu = mu, sigma = sigma,
-                    k = k, batch = batch,top = top, cos_thresh = cos_thresh,
-                    alpha = alpha, edit_thresh = edit_thresh,
-                    UMI_len = UMI_len, UMI_flank = UMI_flank,
-                    # parameter for parallel
-                    cores = cores)
+  mem = peakRAM::peakRAM({
+    bc = extractTagBc(fastq_path = fastq_path,barcode_path = barcode_path,
+                      out_name = file.path(work_dir,"polish.fq.gz"),
+                      # parameters to extract the tag region
+                      toolkit = toolkit,adapter = adapter,
+                      window = window,step = step,len = tag_len,
+                      polyA_bin = polyA_bin,
+                      polyA_base_count = polyA_base_count,polyA_len = polyA_len,
+                      # parameters for barcode match
+                      mu = mu, sigma = sigma,
+                      k = k, batch = batch,top = top, cos_thresh = cos_thresh,
+                      alpha = alpha, edit_thresh = edit_thresh,
+                      UMI_len = UMI_len, UMI_flank = UMI_flank,
+                      # parameter for parallel
+                      cores = cores)
+  })
   end_time <- Sys.time()
   duration = end_time-start_time
   log = sprintf('Barcode match took %.2f %s\n', duration, units(duration))
   cat(log,"\n")
+  print(mem[,2:4])
 
   # fastq mapping
   cat("Start to map polished fastq to genome:")
@@ -281,21 +285,24 @@ reads_extract_bc = function(fastq_path,barcode_path,
   # isoform extraction
   cat("Start to extract isoforms:")
   start_time <- Sys.time()
-  genome<-BSgenome::getBSgenome(genome_name)
-  reads = reads_extraction(bam_path = file.path(work_dir,"bam/polish.bam"),
-                           gene_bed = gene_bed,genome = genome,
-                           toolkit = toolkit,
-                           map_qual = map_qual,end_flank = end_flank,
-                           splice_site_bin = splice_site_bin)
+  mem = peakRAM::peakRAM({
+    genome<-BSgenome::getBSgenome(genome_name)
+    reads = reads_extraction(bam_path = file.path(work_dir,"bam/polish.bam"),
+                             gene_bed = gene_bed,genome = genome,
+                             toolkit = toolkit,
+                             map_qual = map_qual,end_flank = end_flank,
+                             splice_site_bin = splice_site_bin)
 
-  reads_bc = inner_join(bc,reads,by = c("name" = "qname"))
-  reads_bc = reads_bc %>%
-             mutate(polyA.x = as.numeric(polyA.x),polyA.y = as.numeric(polyA.y)) %>%
-             mutate(polyA = polyA.x & polyA.y) %>% dplyr::select(-polyA.x,-polyA.y)
+    reads_bc = inner_join(bc,reads,by = c("name" = "qname"))
+    reads_bc = reads_bc %>%
+               mutate(polyA.x = as.numeric(polyA.x),polyA.y = as.numeric(polyA.y)) %>%
+               mutate(polyA = polyA.x & polyA.y) %>% dplyr::select(-polyA.x,-polyA.y)
+  })
   end_time <- Sys.time()
   duration = end_time-start_time
   log = sprintf('Isoform extraction took %.2f %s\n', duration, units(duration))
   cat(log,"\n")
+  print(mem[,2:4])
 
   if(nrow(reads_bc) > 0){
     # evaluate data quality
@@ -325,6 +332,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
 #' @import dplyr
 #' @import Longcellsrc
 #' @importFrom future.apply future_lapply
+#' @importFrom peakRAM peakRAM
 #' @export
 #'
 
@@ -349,29 +357,33 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
 
   cat("Start to do UMI deduplication:")
   start_time <- Sys.time()
-  count = future_lapply(data_split,function(x){
-    sub_count = umi_count(x,qual,gene_strand,
-                          bar = bar,gene = gene,
-                          isoform = isoform,polyA = polyA,
-                          sim_thresh = sim_thresh,
-                          split = split,sep = sep,
-                          splice_site_thresh = splice_site_thresh,
-                          verbose = verbose)
+  mem = peakRAM::peakRAM({
+    count = future_lapply(data_split,function(x){
+      sub_count = umi_count(x,qual,gene_strand,
+                            bar = bar,gene = gene,
+                            isoform = isoform,polyA = polyA,
+                            sim_thresh = sim_thresh,
+                            split = split,sep = sep,
+                            splice_site_thresh = splice_site_thresh,
+                            verbose = verbose)
 
-    if(length(sub_count) == 0 || nrow(sub_count) == 0){
-      return(NULL)
-    }
-    return(sub_count)
-  },future.packages = c("Longcellsrc"),future.seed=TRUE)
+      if(length(sub_count) == 0 || nrow(sub_count) == 0){
+        return(NULL)
+      }
+      return(sub_count)
+    },future.packages = c("Longcellsrc"),future.seed=TRUE)
+  })
   end_time <- Sys.time()
   duration = end_time-start_time
   log = sprintf('UMI deduplication took %.2f %s\n', duration, units(duration))
   cat(log,"\n")
+  print(mem[,2:4])
 
   if(to_isoform){
     if(!is.null(gtf)){
       cat("Start to do isoform alignment:")
       start_time <- Sys.time()
+      mem = peakRAM::peakRAM({
       count_mat = future_lapply(count,function(x){
         if(is.null(x)){
           return(NULL)
@@ -392,11 +404,12 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
       count_mat = as.data.frame(do.call(dplyr::bind_rows,count_mat))
       count_mat[is.na(count_mat)] = 0
       saveResult(count_mat,file.path(dir,"iso_count_mat.txt"))
-
+      })
       end_time <- Sys.time()
       duration = end_time-start_time
       log = sprintf('Isoform alignment took %.2f %s\n', duration, units(duration))
       cat(log,"\n")
+      print(mem[,2:4])
     }
     else{
       warning("The gtf annotation is not provided for the isoform imputation, will skip this step!")
@@ -464,6 +477,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
   cat("LongcellPre would be applied with ",cores," threads in ",mode," mode.\n")
 
   # barcode match and reads extraction
+
   neceParam = list(fastq_path = fastq_path,barcode_path = barcode_path,
                    gene_bed = gene_bed,adapter = adapter,
                    genome_path = genome_path,genome_name = genome_name,
@@ -474,6 +488,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
   Param = paramMerge(...,reads_extract_bc,neceParam)
   bc = do.call(reads_extract_bc,Param)
 
+
   # UMI deduplication
   neceParam = list(data = bc[[1]],qual = bc[[2]],
                    dir = file.path(work_dir,"out"),
@@ -481,6 +496,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
                    cores = cores)
   Param = paramMerge(...,umi_count_corres,neceParam)
   uc = do.call(umi_count_corres,Param)
+
 
   print("LongcellPre pipeline finished!")
 }
