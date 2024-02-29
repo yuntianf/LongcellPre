@@ -33,6 +33,7 @@ isos2exonids_per_gene = function(isoform,bed,
 #' @param data A dataframe storing reads information, the gene and isoform column are required
 #' @param gene_col The name of the column which stores the gene name in the gene bed
 #' @inheritParams isos2exonids_per_gene
+#' @importFrom dplyr left_join
 #' @return A dataframe as input data, but replace the isoforms by exon id sequences
 isos2exonids = function(data,gene_bed,
                         gene_col = "gene",start = "start",end = "end",id = "id",

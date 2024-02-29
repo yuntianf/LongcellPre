@@ -124,6 +124,13 @@ site_correct = function(from,to,sep = ","){
 #' @param cells The string vector indicating the cell
 #' @param cluster The factor vector indicating the UMI cluster
 #' @param isoform_mid The string vector indicating middle splicing sites.
+#' @importFrom magrittr %>%
+#' @importFrom dplyr mutate
+#' @importFrom dplyr reframe
+#' @importFrom dplyr group_by
+#' @importFrom dplyr summarise
+#' @importFrom dplyr select
+#' @importFrom tidyr pivot_wider
 #' @return A string vector indicating preserved patterns of middle splicing sites
 cells_mid_filter <- function(cells,cluster,isoform_mid){
   if(length(isoform_mid) != length(cells)){
@@ -296,6 +303,8 @@ cluster_isoform_correct <- function(start,mid,end,polyA,preserve_mid){
 #' start, middle splicing sites, end position and polyA existence
 #' @param preserve_mid A string vector indicating preserved patterns of middle splice sites
 #' @importFrom tidyr replace_na
+#' @importFrom dplyr mutate_at
+#' @importFrom dplyr group_by
 #' @return A dataframe including the corrected start, middle splicing sites, end position, polyA existence
 #' and the number of reads of each UMI cluster for each gene in each cell
 isoform_correct <- function(gene_isoform,preserve_mid){

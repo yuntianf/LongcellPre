@@ -220,6 +220,7 @@ graph_to_cluster <- function(graph_list){
 #' @param umi a vector of UMIs.
 #' @param iso a vector of isoform sequences.
 #' @param sim_thresh the minimum threshold of needleman score to connect to different UMIs.
+#' @importFrom dplyr left_join
 umi_cluster <- function(umi,iso = NULL,thresh = 7){
   graph_corres <- umi_sim_graph(umi,iso = iso,sim_thresh = thresh)
   graph = graph_corres[[1]]

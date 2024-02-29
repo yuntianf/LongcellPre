@@ -131,6 +131,12 @@ iso_count_impute = function(data,cell_col = "cell",
 #' @inheritParams iso_count_impute
 #' @param gene_col The name of the column in the input data which records the gene name.
 #' @param transcript_col The name of the column in the input data which records the isoform.
+#' @importFrom magrittr %>%
+#' @importFrom dplyr left_join
+#' @importFrom dplyr group_by_at
+#' @importFrom dplyr filter_at
+#' @importFrom dplyr summarise
+#' @importFrom tidyr pivot_wider
 #' @export
 cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
                                   cell_col = "cell",gene_col = "gene",

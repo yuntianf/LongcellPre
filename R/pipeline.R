@@ -210,6 +210,7 @@ bamGeneCoverage = function(bam,gene_range_bed,outdir,bedtools = "bedtools"){
 #' @importFrom dplyr filter
 #' @importFrom dplyr mutate
 #' @importFrom dplyr select
+#' @importFrom dplyr inner_join
 #' @return A list with two dataframes: the first one records the barcode, UMI and isoform information
 #' for each read, the second one stores the needleman score distirbution for adapters as evaluation of
 #' data quality.
@@ -487,7 +488,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
   neceParam = list(fastq_path = fastq_path,barcode_path = barcode_path,
                    gene_bed = gene_bed,adapter = adapter,
                    genome_path = genome_path,genome_name = genome_name,
-                   toolkit = toolkit,minimap_bed_path = minimap_bed_path,
+                   toolkit = as.numeric(toolkit),minimap_bed_path = minimap_bed_path,
                    work_dir = work_dir,
                    minimap2 = minimap2,samtools = samtools,bedtools = bedtools,
                    cores = cores)
