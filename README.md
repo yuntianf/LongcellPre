@@ -10,7 +10,7 @@ requires:
 You can install `LongcellPre` by `devtools`:
 ```
 devtools::install_github("yuntianf/Longcellsrc")
-devtools::install_github("yuntianf/LongcellPre",dependency=TRUE)
+devtools::install_github("yuntianf/LongcellPre",dependencies=TRUE)
 ```
 
 ## Workflow
