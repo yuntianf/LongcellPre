@@ -204,6 +204,12 @@ bamGeneCoverage = function(bam,gene_range_bed,outdir,bedtools = "bedtools"){
 #' @import Longcellsrc
 #' @importFrom BSgenome getBSgenome
 #' @importFrom peakRAM peakRAM
+#' @importFrom magrittr %>%
+#' @importFrom dplyr group_by
+#' @importFrom dplyr summarise
+#' @importFrom dplyr filter
+#' @importFrom dplyr mutate
+#' @importFrom dplyr select
 #' @return A list with two dataframes: the first one records the barcode, UMI and isoform information
 #' for each read, the second one stores the needleman score distirbution for adapters as evaluation of
 #' data quality.
@@ -329,7 +335,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
 #' @inheritParams umi_count
 #' @inheritParams cells_genes_isos_count
 #' @inheritParams genes_distribute
-#' @import dplyr
+#' @importFrom dplyr bind_rows
 #' @import Longcellsrc
 #' @importFrom future.apply future_lapply
 #' @importFrom peakRAM peakRAM
@@ -485,7 +491,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
                    work_dir = work_dir,
                    minimap2 = minimap2,samtools = samtools,bedtools = bedtools,
                    cores = cores)
-  Param = paramMerge(...,reads_extract_bc,neceParam)
+  Param = paramMerge(reads_extract_bc,neceParam,...)
   bc = do.call(reads_extract_bc,Param)
 
 
@@ -494,7 +500,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
                    dir = file.path(work_dir,"out"),
                    gene_bed = gene_bed,gtf = gtf,
                    cores = cores)
-  Param = paramMerge(...,umi_count_corres,neceParam)
+  Param = paramMerge(umi_count_corres,neceParam,...)
   uc = do.call(umi_count_corres,Param)
 
 

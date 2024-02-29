@@ -84,7 +84,9 @@ mid_polyA_filter = function(endsites, genome,chr,strand,bin = 20,thresh = 0.4){
 #' @param splice_site_bin The bin size to correct slice sites given the splice sites annotation from the gene bed
 #' @param mid_polyA_bin The window size to search for A
 #' @param mid_polyA_thresh The maximum threshold of the frequency of A in the search window.
-#' @import dplyr
+#' @importFrom magrittr %>%
+#' @importFrom dplyr select
+#' @importFrom dplyr filter
 #' @return A dataframe including the , exons, and polyA existence, each row is a read.
 #'
 gene_reads_extraction = function(bam_path,gene_bed,genome,
@@ -143,7 +145,8 @@ gene_reads_extraction = function(bam_path,gene_bed,genome,
 #'
 #' @inheritParams gene_reads_extraction
 #' @param cores The number of cores for parallization
-#' @import dplyr
+#' @importFrom magrittr %>%
+#' @importFrom dplyr filter
 #' @importFrom future.apply future_lapply
 #' @return A dataframe including the exons, and polyA existence, each row is a read.
 #' @export

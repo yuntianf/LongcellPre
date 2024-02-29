@@ -24,8 +24,12 @@ coreDetect = function(cores){
 #' @param data The input dataframe, each row is a read from a gene.
 #' @param cores The number of cores required for parallel
 #' @param gene_col The name of the column in the input data which record the gene name
-#' @import dplyr
-#'
+#' @importFrom magrittr %>%
+#' @importFrom dplyr group_by
+#' @importFrom dplyr all_of
+#' @importFrom dplyr summarise
+#' @importFrom dplyr arrange
+#' @importFrom dplyr desc
 #' @return A list including split dataframe
 genes_distribute = function(data,cores, gene_col = "gene"){
   if(cores == 1){

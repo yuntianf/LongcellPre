@@ -1,27 +1,27 @@
 {
-    "id": "9A84B361",
-    "path": "C:/yuntian/Necessary/Upenn/Thesis/project/Single-cell-Long-reads/methods/github/LongcellPre/R/tag_extraction.R",
-    "project_path": "R/tag_extraction.R",
+    "id": "754C2468",
+    "path": "C:/yuntian/Necessary/Upenn/Thesis/project/Single-cell-Long-reads/scripts/RunLongcellPre.R",
+    "project_path": null,
     "type": "r_source",
-    "hash": "1046336554",
+    "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1709004469378.0,
+    "created": 1709218352396.0,
     "source_on_save": false,
     "relative_order": 7,
     "properties": {
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "83,0",
-        "scrollLine": "63"
+        "cursorPosition": "20,0",
+        "scrollLine": "0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1709175614,
+    "lastKnownWriteTime": 1709218543,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1709175614423,
+    "last_content_update": 1709218543996,
     "read_only": false,
     "read_only_alternatives": []
 }

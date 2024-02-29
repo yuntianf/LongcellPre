@@ -43,8 +43,9 @@ BarcodeMatchUnit = function(seq, barcodes,
 #'
 #' @param data The output from the barcode match step. Should be a dataframe contains the read name, cell barcode and its matching edit distance
 #' @param mean_edit_thresh The maximum tolerance of mean edit distance for a cell barcode to be preserved
-#' @import dplyr
-#'
+#' @importFrom magrittr %>%
+#' @importFrom dplyr group_by
+#' @importFrom dplyr summarise
 BarcodeFilter = function(data,mean_edit_thresh = 1.5){
   #data = data %>% arrange(edit,-nchar(isoform))
   #data <- data[!duplicated(data$qname),]
@@ -71,6 +72,8 @@ BarcodeFilter = function(data,mean_edit_thresh = 1.5){
 #' @import Longcellsrc
 #' @importFrom future.apply future_lapply
 #' @importFrom parallel detectCores
+#' @importFrom magrittr %>%
+#' @importFrom dplyr mutate
 #' @export
 BarcodeMatch = function(seq, barcodes,
                         mu = 20, sigma = 10, sigma_start = 10,

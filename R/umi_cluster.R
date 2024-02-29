@@ -9,7 +9,11 @@
 #' @param iso_thresh The maximum threshold that two isoforms can be different in overlapping bases.
 #' @param split The character to split each exon in the isoform representation
 #' @param sep The character to seperate the exon start and end in the isoform representation
-#' @import dplyr
+#' @importFrom magrittr %>%
+#' @importFrom dplyr group_by
+#' @importFrom dplyr summarise
+#' @importFrom dplyr filter
+#' @importFrom dplyr mutate
 #' @importFrom igraph graph_from_data_frame
 #' @importFrom igraph simplify
 #' @importFrom igraph set_vertex_attr
@@ -66,7 +70,10 @@ umi_sim_graph <- function(umi,iso = NULL,sim_thresh = 7,
 #' @param count The weight for each node, if NULL, all weight will be set as 1.
 #' @param self For the node with self loop in the graph, decide if themselves should be considered in the neibor counting.
 #' @param iso_thresh The maximum threshold that two isoforms can be different in overlapping bases.
-#' @import dplyr
+#' @importFrom magrittr %>%
+#' @importFrom dplyr group_by
+#' @importFrom dplyr summarise
+#' @importFrom dplyr filter
 createSNN <- function(dis,count = NULL,self = FALSE){
   dis <- as.matrix(dis)
   dis <- rbind(dis,dis[,c(2,1)])
@@ -101,7 +108,6 @@ createSNN <- function(dis,count = NULL,self = FALSE){
 #' @description add neighbor sharing as an edge attribute in a graph
 #' @details The function calculates the neighbor sharing for a graph, and add the count of shared neighbors as an edge attribute in the graph
 #' @param graph an igraph object
-#' @import dplyr
 #' @importFrom igraph as_long_data_frame
 #' @importFrom igraph edge_attr
 #' @importFrom igraph vertex_attr
@@ -134,7 +140,13 @@ SNN_graph <- function(graph){
 #' @param alpha the fold change between the number of edges and number of nodes. Lower alpha requires
 #' highlier connected graph.
 #' @param sim_thresh the minimum threshold for the needleman similarity for a graph to stop clustering
-#' @import igraph
+#' @importFrom igraph decompose
+#' @importFrom igraph graph.mincut
+#' @importFrom igraph edge_attr
+#' @importFrom igraph cluster_leiden
+#' @importFrom igraph delete_edges
+#' @importFrom igraph E
+#' @importFrom igraph crossing
 louvain_iter_stack <- function(graph,weight = "weight",
                          resolution = 1,alpha = 2, sim_thresh = 6){
   in_graph_list = decompose(graph)

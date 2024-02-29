@@ -31,7 +31,9 @@
 #' @param flank The length of flank when extract UMI, which is used to be tolerant of indels and dels.
 #' @param cores The number of cores to use for parallization
 #'
-#' @import dplyr
+#' @importFrom magrittr %>%
+#' @importFrom dplyr select
+#' @importFrom dplyr filter
 #' @importFrom stringi stri_reverse
 #' @importFrom spgs reverseComplement
 #' @importFrom future sequential
@@ -108,7 +110,10 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
 #' the adapter sequence
 #' @param flank The length of flank when extract UMI, which is used to be tolerant of indels and dels.
 #'
-#' @import dplyr
+#' @importFrom magrittr %>%
+#' @importFrom dplyr group_by
+#' @importFrom dplyr filter
+#' @importFrom dplyr summarise
 #' @importFrom NameNeedle needleScores
 #' @return A dataframe with two columns, the first is the edit distance and the secons is
 #' how many adapters have such an edit distance to the original adapter
