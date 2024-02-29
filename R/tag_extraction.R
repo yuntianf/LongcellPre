@@ -73,7 +73,7 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
     barcode = stringi::stri_reverse(barcode)
   }
   else if(toolkit == 3){
-    barcode = spgs::reverseComplement(barcode)
+    barcode = spgs::reverseComplement(barcode,case = "upper")
   }
 
   bc = BarcodeMatch(reads$tag, barcode,
@@ -81,11 +81,12 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
                     k = k, batch = batch,top = top, cos_thresh = cos_thresh, alpha = alpha,
                     edit_thresh = edit_thresh,mean_edit_thresh = mean_edit_thresh,
                     UMI_len = UMI_len,UMI_flank = UMI_flank,cores = cores)
+
   if(toolkit == 5){
     bc$barcode = stringi::stri_reverse(bc$barcode)
   }
   else if(toolkit == 3){
-    bc$barcode = spgs::reverseComplement(bc$barcode)
+    bc$barcode = spgs::reverseComplement(bc$barcode,case = "upper")
   }
 
   bc = bc %>% filter(nchar(umi) == UMI_len+2*UMI_flank)

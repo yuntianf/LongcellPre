@@ -214,7 +214,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
                             minimap_bed_path = NULL,
                             work_dir = "./",
                             # parameters for tag extraction
-                            window = 12,step = 3,tag_len = 55,
+                            window = 10,step = 2,tag_len = 55,
                             polyA_bin = 20,polyA_base_count = 15,polyA_len = 10,
                             # parameters for barcode match
                             mu = 15, sigma = 10, k = 6, batch = 100,
