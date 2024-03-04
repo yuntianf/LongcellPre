@@ -1,26 +1,26 @@
 {
-    "id": "47F59E00",
-    "path": "C:/yuntian/Necessary/Upenn/Thesis/project/Single-cell-Long-reads/methods/github/LongcellPre/R/barcodeMatch.R",
-    "project_path": "R/barcodeMatch.R",
+    "id": "F6A695F3",
+    "path": "C:/yuntian/Necessary/Upenn/Thesis/project/Single-cell-Long-reads/methods/github/LongcellPre/R/annotation.R",
+    "project_path": "R/annotation.R",
     "type": "r_source",
     "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1709229397929.0,
+    "created": 1709564381477.0,
     "source_on_save": false,
     "relative_order": 8,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "72,0",
-        "scrollLine": "62"
+        "cursorPosition": "11,22",
+        "scrollLine": "0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1709227169,
+    "lastKnownWriteTime": 1709564391,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1709227169,
+    "last_content_update": 1709564391614,
     "read_only": false,
     "read_only_alternatives": []
 }

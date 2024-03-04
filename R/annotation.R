@@ -9,6 +9,7 @@
 #' @importFrom GenomicFeatures makeTxDbFromGFF exonsBy exonicParts exons
 #' @importFrom tidyr unnest
 #' @importFrom dplyr mutate
+#' @importFrom dplyr n
 #' @return NULL
 #' @export
 #'
