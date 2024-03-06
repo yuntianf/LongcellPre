@@ -38,7 +38,7 @@ bedtools = "bedtools"
 RunLongcellPre(fastq = fastq,barcode_path = barcodes,toolkit = toolkit,
                genome_path = genome_path,genome_name = genome_name,
                gtf_path = gtf_path,minimap_bed_path = minimap_bed_path,work_dir = work_dir,
-               samtools = samtools, minimap2 = minimap2,bedtools = bedtools)
+               samtools = samtools, minimap2 = minimap2,bedtools = bedtools,cores = 4, strategy="multicore")
 ```
 
 ## Citation
