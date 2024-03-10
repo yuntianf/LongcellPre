@@ -26,6 +26,7 @@ coreDetect = function(cores){
 #' @param gene_col The name of the column in the input data which record the gene name
 #' @importFrom magrittr %>%
 #' @importFrom dplyr group_by
+#' @importFrom dplyr mutate
 #' @importFrom dplyr all_of
 #' @importFrom dplyr summarise
 #' @importFrom dplyr arrange
@@ -41,12 +42,12 @@ genes_distribute = function(data,cores, gene_col = "gene"){
   colnames(gene_read_num)[colnames(gene_read_num) == gene_col] = "gene"
 
   unit = c(1:cores,cores:1)
-  gene_read_num$group = rep(unit,(nrow(data) %/% length(unit) + 1))[1:nrow(data)]
+  gene_read_num = gene_read_num %>% mutate(group = rep(unit,(nrow(data) %/% length(unit) + 1))[1:nrow(gene_read_num)])
 
-  gene_list = (gene_read_num %>% group_by(group) %>% summarise(list(gene)))$gene
+  gene_list = (gene_read_num %>% group_by(group) %>% summarise(gene = list(gene)))$gene
 
   data_split = lapply(gene_list,function(x){
-    sub = data[data[,"gene_col"] %in% x,]
+    sub = data[data[,gene_col] %in% x,]
     return(sub)
   })
   return(data_split)

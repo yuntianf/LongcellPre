@@ -13,6 +13,7 @@
 #' @param gtf_end_col the name of the column which stores the end position of exon in the gtf.
 #' @param sep The character to split the start and end position for each exon in the isoform.
 #' @param split The character to split the exons in the isoform
+#' @importFrom dplyr reframe
 #' @return A dataframe with two columns, the first column records the reads, the second column records the isoform
 #' the read could align to.
 #' @export
@@ -24,7 +25,7 @@ iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.25,
   sub_gtf = gtf %>% filter_at(gtf_gene_col,~.==gene) %>%
     arrange_at(c(gtf_iso_col,gtf_start_col,gtf_end_col))
   sub_gtf_iso = sub_gtf %>% group_by_at(gtf_iso_col) %>%
-    summarise(iso = paste(paste(!!sym(gtf_start_col),
+    reframe(iso = paste(paste(!!sym(gtf_start_col),
                                 !!sym(gtf_end_col),sep = sep),collapse = split))
   sub_gtf_iso = as.data.frame(sub_gtf_iso)
 

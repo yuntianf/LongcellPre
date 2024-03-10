@@ -340,8 +340,8 @@ int needle(std::string A,std::string B,
 
 // ### edit distance ###
 int minEditDis(std::string seq1, std::string seq2, int k) {
-  std::vector<std::string> seq1_kmer = kmer(seq1, k);
-  std::vector<std::string> seq2_kmer = kmer(seq2, k);
+  std::vector<std::string> seq1_kmer = kmer(seq1, k,1);
+  std::vector<std::string> seq2_kmer = kmer(seq2, k,1);
 
   int kmer_size = seq1_kmer.size();
 
