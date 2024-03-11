@@ -108,6 +108,7 @@ cell_iso_count_impute = function(data){
 #' @importFrom dplyr select
 #' @importFrom dplyr group_by_at
 #' @importFrom dplyr summarise_at
+#' @importFrom dplyr ungroup
 iso_count_impute = function(data,cell_col = "cell",
                             iso_col = "isoform",overlap_col = "overlap",
                             count_col = "count"){
