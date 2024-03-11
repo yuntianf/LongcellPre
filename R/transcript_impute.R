@@ -15,6 +15,9 @@
 #' @param split The character to split the exons in the isoform
 #' @importFrom dplyr reframe
 #' @importFrom dplyr arrange_at
+#' @importFrom dplyr group_by
+#' @importFrom dplyr summarise_all
+#' @importFrom rlang sym
 #' @return A dataframe with two columns, the first column records the reads, the second column records the isoform
 #' the read could align to.
 #' @export
