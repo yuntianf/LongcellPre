@@ -14,6 +14,7 @@
 #' @param sep The character to split the start and end position for each exon in the isoform.
 #' @param split The character to split the exons in the isoform
 #' @importFrom dplyr reframe
+#' @importFrom dplyr arrange_at
 #' @return A dataframe with two columns, the first column records the reads, the second column records the isoform
 #' the read could align to.
 #' @export
