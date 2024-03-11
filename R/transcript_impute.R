@@ -45,12 +45,12 @@ iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.25,
   transcripts_iso_corres = as.data.frame(transcripts_iso_corres)
   colnames(transcripts_iso_corres) = c("isoform","transname","dis","overlap")
   transcripts_iso_corres = transcripts_iso_corres[,c("isoform","transname","overlap","dis")]
-  suppressWarnings(
+  suppressWarnings({
     transcripts_iso_corres = transcripts_iso_corres %>% group_by(isoform) %>%
                            summarise_all(~.[dis == min(dis)]) %>%
                            dplyr::select(isoform,transname,overlap) %>%
                            arrange(isoform,-overlap)
-  )
+  })
   transcripts_iso_corres = as.data.frame(transcripts_iso_corres)
   #return(transcripts_iso_corres)
   transcripts_iso_corres$isoform = transcripts_uniq[transcripts_iso_corres$isoform+1]
