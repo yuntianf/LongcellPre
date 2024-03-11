@@ -435,6 +435,7 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
 #'
 #' @inheritParams reads_extract_bc
 #' @inheritParams umi_count_corres
+#' @param force_barcode_match decide whether to redo the barcode match if there already exist the output
 #' @param ... All other tuning parameters
 #'
 #' @importFrom future plan
@@ -456,6 +457,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
                           minimap2 = "minimap2",
                           samtools = "samtools",
                           bedtools = "bedtools",
+                          force_barcode_match = FALSE,
                           ...){
   # initialization
   cache = init(work_dir)
@@ -484,20 +486,34 @@ RunLongcellPre = function(fastq_path,barcode_path,
   cat("LongcellPre would be applied with ",cores," threads in ",mode," mode.\n")
 
   # barcode match and reads extraction
-
-  neceParam = list(fastq_path = fastq_path,barcode_path = barcode_path,
-                   gene_bed = gene_bed,adapter = adapter,
-                   genome_path = genome_path,genome_name = genome_name,
-                   toolkit = as.numeric(toolkit),minimap_bed_path = minimap_bed_path,
-                   work_dir = work_dir,
-                   minimap2 = minimap2,samtools = samtools,bedtools = bedtools,
-                   cores = cores)
-  Param = paramMerge(reads_extract_bc,neceParam,...)
-  bc = do.call(reads_extract_bc,Param)
+  do_bc_flag = TRUE
+  if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt")) &
+     file.exists(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))){
+    if(!force_barcode_match){
+      warning("The barcode match output already exist,
+              if you want to redo it please set force_barcode_match to be TRUE")
+      bc_out = read.table(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt"),header = TRUE,sep = "\t")
+      qual = read.table(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"),header = TRUE,sep = "\t")
+      do_bc_flag = FALSE
+    }
+  }
+  if(do_bc_flag){
+    neceParam = list(fastq_path = fastq_path,barcode_path = barcode_path,
+                     gene_bed = gene_bed,adapter = adapter,
+                     genome_path = genome_path,genome_name = genome_name,
+                     toolkit = as.numeric(toolkit),minimap_bed_path = minimap_bed_path,
+                     work_dir = work_dir,
+                     minimap2 = minimap2,samtools = samtools,bedtools = bedtools,
+                     cores = cores)
+    Param = paramMerge(reads_extract_bc,neceParam,...)
+    bc = do.call(reads_extract_bc,Param)
+    bc_out = bc[[1]]
+    qual = bc[[2]]
+  }
 
 
   # UMI deduplication
-  neceParam = list(data = bc[[1]],qual = bc[[2]],
+  neceParam = list(data = bc_out,qual = qual,
                    dir = file.path(work_dir,"out"),
                    gene_bed = gene_bed,gtf = gtf,
                    cores = cores)
