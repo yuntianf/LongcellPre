@@ -4,7 +4,7 @@
 #' @details Build the directories for the output of LongcellPre
 #'
 #' @param work_dir The specified directory for the output of LongcellPre
-#'
+#' @export
 init = function(work_dir){
   dir.create(work_dir,showWarnings = FALSE)
   dir.create(file.path(work_dir,"annotation"),showWarnings = FALSE)

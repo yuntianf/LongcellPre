@@ -21,6 +21,7 @@ RunLongcellPre(
   minimap2 = "minimap2",
   samtools = "samtools",
   bedtools = "bedtools",
+  force_barcode_match = FALSE,
   ...
 )
 }
@@ -42,6 +43,8 @@ RunLongcellPre(
 \item{minimap2}{The path of the minimap2}
 
 \item{samtools}{The path of the samtools}
+
+\item{force_barcode_match}{decide whether to redo the barcode match if there already exist the output}
 
 \item{...}{All other tuning parameters}
 }

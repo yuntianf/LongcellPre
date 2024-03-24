@@ -3,7 +3,7 @@
     "path": "C:/yuntian/Necessary/Upenn/Thesis/project/Single-cell-Long-reads/methods/github/LongcellPre/R/pipeline.R",
     "project_path": "R/pipeline.R",
     "type": "r_source",
-    "hash": "1644588354",
+    "hash": "3419599273",
     "contents": "",
     "dirty": false,
     "created": 1708982401155.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "481,25",
-        "scrollLine": "461"
+        "cursorPosition": "6,10",
+        "scrollLine": "0"
     },
-    "folds": "7|26|14|0|\n35|34|44|0|\n77|77|99|0|\n111|71|129|0|\n149|61|164|0|\n176|76|190|0|\n245|26|260|2|\n",
-    "lastKnownWriteTime": 1709236930,
+    "folds": "",
+    "lastKnownWriteTime": 1711293202,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1709244452209,
+    "last_content_update": 1711293202947,
     "read_only": false,
     "read_only_alternatives": []
 }
