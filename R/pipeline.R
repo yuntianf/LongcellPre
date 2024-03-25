@@ -201,6 +201,9 @@ bamGeneCoverage = function(bam,gene_range_bed,outdir,bedtools = "bedtools"){
 #' @inheritParams fastqMap
 #' @inheritParams reads_extraction
 #' @inheritParams BarcodeFilter
+#' @param force_barcode_match flag to force to redo the barcode match step
+#' @param force_map flag to force to redo the mapping step
+#' @param force_isoform_extract flag to force to redo the isoform extraction step
 #' @import Longcellsrc
 #' @importFrom BSgenome getBSgenome
 #' @importFrom peakRAM peakRAM
@@ -236,93 +239,136 @@ reads_extract_bc = function(fastq_path,barcode_path,
                             splice_site_bin = 2,
                             #parameters for barcode filtering
                             mean_edit_thresh = 1.5,
+                            # parameters for cache
+                            force_barcode_match = FALSE,
+                            force_map = FALSE,
+                            force_isoform_extract = FALSE,
                             # parameters for parallel
                             cores = 1){
   cores = coreDetect(cores)
 
   # barcode match
   cat("Start to do barcode match:")
-  start_time <- Sys.time()
-  mem = peakRAM::peakRAM({
-    bc = extractTagBc(fastq_path = fastq_path,barcode_path = barcode_path,
-                      out_name = file.path(work_dir,"polish.fq.gz"),
-                      # parameters to extract the tag region
-                      toolkit = toolkit,adapter = adapter,
-                      window = window,step = step,len = tag_len,
-                      polyA_bin = polyA_bin,
-                      polyA_base_count = polyA_base_count,polyA_len = polyA_len,
-                      # parameters for barcode match
-                      mu = mu, sigma = sigma,
-                      k = k, batch = batch,top = top, cos_thresh = cos_thresh,
-                      alpha = alpha, edit_thresh = edit_thresh,
-                      UMI_len = UMI_len, UMI_flank = UMI_flank,
-                      # parameter for parallel
-                      cores = cores)
-  })
-  end_time <- Sys.time()
-  duration = end_time-start_time
-  log = sprintf('Barcode match took %.2f %s\n', duration, units(duration))
-  cat(log,"\n")
-  print(mem[,2:4])
+  do_bc_flag = TRUE
+  if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt")) &
+     file.exists(file.path(work_dir,"polish.fq.gz"))){
+    if(!force_barcode_match){
+      warning("The barcode match output already exist,
+              if you want to redo it please set force_barcode_match to be TRUE")
+      bc = read.table(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt"),header = TRUE,sep = "\t")
+      do_bc_flag = FALSE
+    }
+  }
+  if(do_bc_flag){
+    start_time <- Sys.time()
+    mem = peakRAM::peakRAM({
+      bc = extractTagBc(fastq_path = fastq_path,barcode_path = barcode_path,
+                        out_name = file.path(work_dir,"polish.fq.gz"),
+                        # parameters to extract the tag region
+                        toolkit = toolkit,adapter = adapter,
+                        window = window,step = step,len = tag_len,
+                        polyA_bin = polyA_bin,
+                        polyA_base_count = polyA_base_count,polyA_len = polyA_len,
+                        # parameters for barcode match
+                        mu = mu, sigma = sigma,
+                        k = k, batch = batch,top = top, cos_thresh = cos_thresh,
+                        alpha = alpha, edit_thresh = edit_thresh,
+                        UMI_len = UMI_len, UMI_flank = UMI_flank,
+                        # parameter for parallel
+                        cores = cores)
+    })
+    saveResult(bc,file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt"))
+    end_time <- Sys.time()
+    duration = end_time-start_time
+    log = sprintf('Barcode match took %.2f %s\n', duration, units(duration))
+    cat(log,"\n")
+    print(mem[,2:4])
+  }
+
 
   # fastq mapping
   cat("Start to map polished fastq to genome:")
-  start_time <- Sys.time()
-  cache = fastqMap(fastq = file.path(work_dir,"polish.fq.gz"),
-                   out_name = file.path(work_dir,"bam/polish.bam"),
-                   genome_path = genome_path,bed_path = minimap_bed_path,
-                   minimap2 = minimap2,samtools = samtools,
-                   minimap2_thread = cores,samtools_thread = cores)
-  end_time <- Sys.time()
-  duration = end_time-start_time
-  sprintf('Genome mapping took %.2f %s\n', duration, units(duration))
-
-  gene_range = gene_bed %>% group_by(gene) %>% summarise(chr = unique(chr),start = min(start),
-                                                         end = max(end),strand = unique(strand))
-  gene_range = gene_range[,c("chr","start","end","strand","gene")]
-  write.table(gene_range,file.path(work_dir,"annotation/gene_range"),sep = "\t",quote = FALSE,
-              row.names = FALSE,col.names = FALSE)
-
-  gene_cover = bamGeneCoverage(bam = file.path(work_dir,"bam/polish.bam"),
-                               gene_range_bed = file.path(work_dir,"annotation/gene_range"),
-                               outdir = file.path(work_dir,"annotation"),
-                               bedtools = bedtools)
-  gene_bed = gene_bed %>% filter(gene %in% gene_cover$gene)
+  do_map_flag = TRUE
+  if(file.exists(file.path(work_dir,"bam/polish.bam"))){
+    if(!force_map){
+      warning("The mapping result already exists,
+              if you want to redo it please set force_map to be TRUE")
+      do_map_flag = FALSE
+    }
+  }
+  if(do_map_flag){
+    start_time <- Sys.time()
+    cache = fastqMap(fastq = file.path(work_dir,"polish.fq.gz"),
+                     out_name = file.path(work_dir,"bam/polish.bam"),
+                     genome_path = genome_path,bed_path = minimap_bed_path,
+                     minimap2 = minimap2,samtools = samtools,
+                     minimap2_thread = cores,samtools_thread = cores)
+    end_time <- Sys.time()
+    duration = end_time-start_time
+    sprintf('Genome mapping took %.2f %s\n', duration, units(duration))
+  }
 
   # isoform extraction
   cat("Start to extract isoforms:")
-  start_time <- Sys.time()
-  mem = peakRAM::peakRAM({
-    genome<-BSgenome::getBSgenome(genome_name)
-    reads = reads_extraction(bam_path = file.path(work_dir,"bam/polish.bam"),
-                             gene_bed = gene_bed,genome = genome,
-                             toolkit = toolkit,
-                             map_qual = map_qual,end_flank = end_flank,
-                             splice_site_bin = splice_site_bin)
-
-    reads_bc = inner_join(bc,reads,by = c("name" = "qname"))
-    reads_bc = reads_bc %>%
-               mutate(polyA.x = as.numeric(polyA.x),polyA.y = as.numeric(polyA.y)) %>%
-               mutate(polyA = polyA.x & polyA.y) %>% dplyr::select(-polyA.x,-polyA.y)
-  })
-  end_time <- Sys.time()
-  duration = end_time-start_time
-  log = sprintf('Isoform extraction took %.2f %s\n', duration, units(duration))
-  cat(log,"\n")
-  print(mem[,2:4])
-
-  if(nrow(reads_bc) > 0){
-    # evaluate data quality
-    ad = adapter_dis(data = reads_bc,UMI_len = UMI_len,flank = UMI_flank)
-
-    #reads_bc = reads_bc %>% dplyr::select(qname,barcode,gene,isoform,umi,polyA)
-    saveResult(reads_bc,file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt"))
-    saveResult(ad,file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))
-    return(list(reads_bc,ad))
+  do_extract_flag = TRUE
+  if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt")) &
+     file.exists(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))){
+    if(!force_isoform_extract){
+      warning("The barcode match and isoform extraction result already exist,
+              if you want to redo it please set force_isoform_extract to be TRUE")
+      reads_bc = read.table(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt"),header = TRUE,sep = "\t")
+      qual = read.table(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"),header = TRUE,sep = "\t")
+      do_extract_flag = FALSE
+    }
   }
-  else{
-    stop("No read is found with valid barcode, please check if your barcode and fastq file match!")
+
+  if(do_extract_flag){
+    gene_range = gene_bed %>% group_by(gene) %>% summarise(chr = unique(chr),start = min(start),
+                                                           end = max(end),strand = unique(strand))
+    gene_range = gene_range[,c("chr","start","end","strand","gene")]
+    write.table(gene_range,file.path(work_dir,"annotation/gene_range"),sep = "\t",quote = FALSE,
+                row.names = FALSE,col.names = FALSE)
+
+    gene_cover = bamGeneCoverage(bam = file.path(work_dir,"bam/polish.bam"),
+                                 gene_range_bed = file.path(work_dir,"annotation/gene_range"),
+                                 outdir = file.path(work_dir,"annotation"),
+                                 bedtools = bedtools)
+    gene_bed = gene_bed %>% filter(gene %in% gene_cover$gene)
+
+    start_time <- Sys.time()
+    mem = peakRAM::peakRAM({
+      genome<-BSgenome::getBSgenome(genome_name)
+      reads = reads_extraction(bam_path = file.path(work_dir,"bam/polish.bam"),
+                               gene_bed = gene_bed,genome = genome,
+                               toolkit = toolkit,
+                               map_qual = map_qual,end_flank = end_flank,
+                               splice_site_bin = splice_site_bin)
+
+      reads_bc = inner_join(bc,reads,by = c("name" = "qname"))
+      reads_bc = reads_bc %>%
+        mutate(polyA.x = as.numeric(polyA.x),polyA.y = as.numeric(polyA.y)) %>%
+        mutate(polyA = polyA.x & polyA.y) %>% dplyr::select(-polyA.x,-polyA.y)
+    })
+    end_time <- Sys.time()
+    duration = end_time-start_time
+    log = sprintf('Isoform extraction took %.2f %s\n', duration, units(duration))
+    cat(log,"\n")
+    print(mem[,2:4])
+
+    if(nrow(reads_bc) > 0){
+      # evaluate data quality
+      ad = adapter_dis(data = reads_bc,UMI_len = UMI_len,flank = UMI_flank)
+
+      #reads_bc = reads_bc %>% dplyr::select(qname,barcode,gene,isoform,umi,polyA)
+      saveResult(reads_bc,file.path(work_dir,"BarcodeMatch/BarcodeMatchReads.txt"))
+      saveResult(ad,file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))
+    }
+    else{
+      stop("No read is found with valid barcode, please check if your barcode and fastq file match!")
+    }
   }
+
+  return(list(reads_bc,ad))
 }
 
 
@@ -457,7 +503,6 @@ RunLongcellPre = function(fastq_path,barcode_path,
                           minimap2 = "minimap2",
                           samtools = "samtools",
                           bedtools = "bedtools",
-                          force_barcode_match = FALSE,
                           ...){
   # initialization
   cache = init(work_dir)
@@ -486,31 +531,17 @@ RunLongcellPre = function(fastq_path,barcode_path,
   cat("LongcellPre would be applied with ",cores," threads in ",mode," mode.\n")
 
   # barcode match and reads extraction
-  do_bc_flag = TRUE
-  if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt")) &
-     file.exists(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))){
-    if(!force_barcode_match){
-      warning("The barcode match output already exist,
-              if you want to redo it please set force_barcode_match to be TRUE")
-      bc_out = read.table(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt"),header = TRUE,sep = "\t")
-      qual = read.table(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"),header = TRUE,sep = "\t")
-      do_bc_flag = FALSE
-    }
-  }
-  if(do_bc_flag){
-    neceParam = list(fastq_path = fastq_path,barcode_path = barcode_path,
-                     gene_bed = gene_bed,adapter = adapter,
-                     genome_path = genome_path,genome_name = genome_name,
-                     toolkit = as.numeric(toolkit),minimap_bed_path = minimap_bed_path,
-                     work_dir = work_dir,
-                     minimap2 = minimap2,samtools = samtools,bedtools = bedtools,
-                     cores = cores)
-    Param = paramMerge(reads_extract_bc,neceParam,...)
-    bc = do.call(reads_extract_bc,Param)
-    bc_out = bc[[1]]
-    qual = bc[[2]]
-  }
-
+  neceParam = list(fastq_path = fastq_path,barcode_path = barcode_path,
+                   gene_bed = gene_bed,adapter = adapter,
+                   genome_path = genome_path,genome_name = genome_name,
+                   toolkit = as.numeric(toolkit),minimap_bed_path = minimap_bed_path,
+                   work_dir = work_dir,
+                   minimap2 = minimap2,samtools = samtools,bedtools = bedtools,
+                   cores = cores)
+  Param = paramMerge(reads_extract_bc,neceParam,...)
+  bc = do.call(reads_extract_bc,Param)
+  bc_out = bc[[1]]
+  qual = bc[[2]]
 
   # UMI deduplication
   neceParam = list(data = bc_out,qual = qual,

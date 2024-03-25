@@ -37,6 +37,9 @@ reads_extract_bc(
   end_flank = 200,
   splice_site_bin = 2,
   mean_edit_thresh = 1.5,
+  force_barcode_match = FALSE,
+  force_map = FALSE,
+  force_isoform_extract = FALSE,
   cores = 1
 )
 }
@@ -98,6 +101,12 @@ edit distance over the threshold would be filtered out.}
 \item{splice_site_bin}{The bin size to correct slice sites given the splice sites annotation from the gene bed}
 
 \item{mean_edit_thresh}{The maximum tolerance of mean edit distance for a cell barcode to be preserved}
+
+\item{force_barcode_match}{flag to force to redo the barcode match step}
+
+\item{force_map}{flag to force to redo the mapping step}
+
+\item{force_isoform_extract}{flag to force to redo the isoform extraction step}
 
 \item{cores}{The number of cores to use for parallization}
 }

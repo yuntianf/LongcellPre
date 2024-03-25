@@ -21,7 +21,6 @@ RunLongcellPre(
   minimap2 = "minimap2",
   samtools = "samtools",
   bedtools = "bedtools",
-  force_barcode_match = FALSE,
   ...
 )
 }
@@ -44,9 +43,9 @@ RunLongcellPre(
 
 \item{samtools}{The path of the samtools}
 
-\item{force_barcode_match}{decide whether to redo the barcode match if there already exist the output}
-
 \item{...}{All other tuning parameters}
+
+\item{force_barcode_match}{decide whether to redo the barcode match if there already exist the output}
 }
 \description{
 A wrapper function to include the reads_extract_bc and umi_count_corres.
