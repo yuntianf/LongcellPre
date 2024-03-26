@@ -173,21 +173,19 @@ fastqMap = function(fastq,out_name,genome_path,bed_path = NULL,
 #' @param gene_range_bed The filename of the gene bed file, each row records the start and end position for the gene
 #' @param outdir The folder to store the output file.
 #' @param bedtools The path for the bedtools.
-#' @return A bed file including all genes with read alignment in the bam file.
+#' @return A bed file including all genes without read alignment in the bam file.
 bamGeneCoverage = function(bam,gene_range_bed,outdir,bedtools = "bedtools"){
   command1 = paste(c(bedtools, "bamtobed -i", bam, "|",
                      bedtools, "merge -i - > ", file.path(outdir,"cover.bed")),collapse = " ")
   command2 = paste(c(bedtools, "subtract -a", gene_range_bed, "-b", file.path(outdir,"cover.bed"),
-                   "-A >", file.path(outdir,"temp.bed")),collapse = " ")
-  command3 = paste(c(bedtools, "subtract -a", gene_range_bed, "-b", file.path(outdir,"temp.bed"),
-                   "-A >", file.path(outdir,"geneCover.bed")),collapse = " ")
+                     "-A >", file.path(outdir,"noncover.bed")),collapse = " ")
+
   system(command1)
   system(command2)
-  system(command3)
-  system(paste("rm",file.path(outdir,"temp.bed"),collapse = " "))
-  gene_cover = read.table(file.path(outdir,"geneCover.bed"))
-  colnames(gene_cover) = c("chr","start","end","strand","gene")
-  return(gene_cover)
+
+  noncover = read.table(file.path(outdir,"noncover.bed"))
+  colnames(noncover) = c("chr","start","end","strand","gene")
+  return(noncover)
 }
 
 #' @title reads_extract_bc
@@ -326,14 +324,14 @@ reads_extract_bc = function(fastq_path,barcode_path,
     gene_range = gene_bed %>% group_by(gene) %>% summarise(chr = unique(chr),start = min(start),
                                                            end = max(end),strand = unique(strand))
     gene_range = gene_range[,c("chr","start","end","strand","gene")]
-    write.table(gene_range,file.path(work_dir,"annotation/gene_range"),sep = "\t",quote = FALSE,
+    write.table(gene_range,file.path(work_dir,"annotation/gene_range.txt"),sep = "\t",quote = FALSE,
                 row.names = FALSE,col.names = FALSE)
 
-    gene_cover = bamGeneCoverage(bam = file.path(work_dir,"bam/polish.bam"),
-                                 gene_range_bed = file.path(work_dir,"annotation/gene_range"),
+    noncover = bamGeneCoverage(bam = file.path(work_dir,"bam/polish.bam"),
+                                 gene_range_bed = file.path(work_dir,"annotation/gene_range.txt"),
                                  outdir = file.path(work_dir,"annotation"),
                                  bedtools = bedtools)
-    gene_bed = gene_bed %>% filter(gene %in% gene_cover$gene)
+    gene_bed = gene_bed %>% filter(!gene %in% noncover$gene)
 
     start_time <- Sys.time()
     mem = peakRAM::peakRAM({
@@ -360,7 +358,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
       ad = adapter_dis(data = reads_bc,UMI_len = UMI_len,flank = UMI_flank)
 
       #reads_bc = reads_bc %>% dplyr::select(qname,barcode,gene,isoform,umi,polyA)
-      saveResult(reads_bc,file.path(work_dir,"BarcodeMatch/BarcodeMatchReads.txt"))
+      saveResult(reads_bc,file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt"))
       saveResult(ad,file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))
     }
     else{
