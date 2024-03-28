@@ -1,18 +1,85 @@
+#' @title read2bins
+#' @description transform the read isoform string to a bin matrix
+#' @details transform the read isoform string to a bin matrix
+#' @param read A string to represent the isoform of a read
+#' @param sep The character to split the start and end position for each exon in the isoform.
+#' @param split The character to split the exons in the isoform
+#' @importFrom Longcellsrc isoform2sites
+#' @return A dataframe with two columns, the first column records the start of each exon, the second records
+#' the end position.
+read2bins = function(read,sep = ",",split = "|"){
+  sites = Longcellsrc::isoform2sites(read,split = split,sep = sep)
+  len = length(sites)
+  bins = as.data.frame(cbind(sites[seq(1,len,2)],sites[seq(2,len,2)]))
+  colnames(bins) = c("start","end")
+  return(bins)
+}
+
+#' @title binsum
+#' @description calculate the total length of a series of bins
+#' @details calculate the total length of a series of bins
+#' @param bin The bin matrix
+#' @param start_col,end_col The name of the column recording the start/end position
+#' @importFrom valr bed_merge
+#' @return A number as the total length.
+binsum = function(bin,start_col = "start",end_col = "end"){
+  bin = bin[,c(start_col,end_col)]
+  colnames(bin) = c("start","end")
+  bin$chrom = "chr1"
+
+  bin = as.data.frame(valr::bed_merge(bin))
+  size = sum(as.numeric(bin[,"end"]) - as.numeric(bin[,"start"]))+nrow(bin)
+  return(size)
+}
+
+#' @title intron_only
+#' @description judge if a read only contains intron sequence
+#' @details This function compares the coverage between the read and the annotated isoform, if the read
+#' has no overlap with the annotated isoform, this read is classified as intron.
+#' @param reads A string vector contains strings for reads
+#' @param gtf The gtf annotation, each row is an exon for an isoform
+#' @param gtf_start_col the name of the column which stores the start position of exon in the gtf.
+#' @param gtf_end_col the name of the column which stores the end position of exon in the gtf.
+#' @param sep The character to split the start and end position for each exon in the isoform.
+#' @param split The character to split the exons in the isoform
+#' @importFrom valr bed_subtract
+#' @return A boolean vector.
+intron_only = function(reads,gtf,gtf_start_col = "start",gtf_end_col = "end",
+                       sep = ",",split = "|"){
+  exon_bin = as.data.frame(gtf[,c(gtf_start_col,gtf_end_col)])
+  colnames(exon_bin) = c("start","end")
+  exon_bin$chrom = "chr1"
+
+  intron_flag = sapply(reads,function(x){
+    bins = read2bins(x,sep,split)
+    bins$chrom = "chr1"
+    diff = valr::bed_subtract(bins,exon_bin)
+
+    if(binsum(diff) == binsum(bins)){
+      return(TRUE)
+    }
+    else{
+      return(FALSE)
+    }
+  })
+
+  return(intron_flag)
+}
+
+
+
 #' @title iso_corres
 #' @description map the reads to the annotated isoforms for one gene
 #' @details map the reads to the annotated isoforms for one gene
+#' @inheritParams intron_only
 #' @param transcripts A string vector storing reads
 #' @param gene The gene name, should exist in the gtf annotation
-#' @param gtf The gtf annotation, each row is an exon for an isoform
 #' @param thresh The maximum threshold for the total offset of middle splicing sites.
 #' @param overlap_thresh The minimum threshold for the coverage of the annotated isoform.
 #' @param end_bias The maximum threshold for the offset of start and end position.
 #' @param gtf_gene_col the name of the column which stores gene name in the gtf.
 #' @param gtf_iso_col the name of the column which stores isoform name in the gtf.
-#' @param gtf_start_col the name of the column which stores the start position of exon in the gtf.
-#' @param gtf_end_col the name of the column which stores the end position of exon in the gtf.
-#' @param sep The character to split the start and end position for each exon in the isoform.
-#' @param split The character to split the exons in the isoform
+#' @param filter_only_intron A boolean to indicate if read only cover intron part should be preserved.
 #' @importFrom dplyr reframe
 #' @importFrom dplyr arrange_at
 #' @importFrom dplyr group_by
@@ -25,15 +92,24 @@ iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.25,
                       end_bias = 200,
                       gtf_gene_col = "gene",gtf_iso_col = "transname",
                       gtf_start_col = "start",gtf_end_col = "end",
+                      filter_only_intron = TRUE,
                       sep = ",",split = "|"){
   sub_gtf = gtf %>% filter_at(gtf_gene_col,~.==gene) %>%
     arrange_at(c(gtf_iso_col,gtf_start_col,gtf_end_col))
+
   sub_gtf_iso = sub_gtf %>% group_by_at(gtf_iso_col) %>%
     reframe(iso = paste(paste(!!sym(gtf_start_col),
                                 !!sym(gtf_end_col),sep = sep),collapse = split))
   sub_gtf_iso = as.data.frame(sub_gtf_iso)
 
   transcripts_uniq = unique(transcripts)
+
+  if(filter_only_intron){
+    intron_flag = intron_only(transcripts_uniq,sub_gtf,
+                              gtf_start_col,gtf_end_col,
+                              sep,split)
+    transcripts_uniq = transcripts_uniq[!intron_flag]
+  }
 
   #return(list(transcripts_uniq,sub_gtf_iso))
   transcripts_iso_corres = isoset_mid_diff(transcripts_uniq,sub_gtf_iso$iso,

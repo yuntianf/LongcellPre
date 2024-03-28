@@ -154,7 +154,7 @@ fastqMap = function(fastq,out_name,genome_path,bed_path = NULL,
     minimap_command = paste(c(minimap_command,"--junc-bed",bed_path),collapse = " ")
   }
   samtools_command1 = paste(c(samtools,"view -bS -@", samtools_thread,"-"),collapse = " ")
-  samtools_command2 = paste(c(samtools,"sort - -m 2G -@", samtools_thread,"-o",out_name,
+  samtools_command2 = paste(c(samtools,"sort - -@", samtools_thread,"-o",out_name,
                               "&&",samtools,"index",out_name),collapse = " ")
 
   command = paste(c(minimap_command,samtools_command1,samtools_command2),collapse = " | ")
