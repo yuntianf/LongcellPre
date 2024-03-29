@@ -355,18 +355,18 @@ reads_extract_bc = function(fastq_path,barcode_path,
 
     if(nrow(reads_bc) > 0){
       # evaluate data quality
-      ad = adapter_dis(data = reads_bc,UMI_len = UMI_len,flank = UMI_flank)
+      qual = adapter_dis(data = reads_bc,UMI_len = UMI_len,flank = UMI_flank)
 
       #reads_bc = reads_bc %>% dplyr::select(qname,barcode,gene,isoform,umi,polyA)
       saveResult(reads_bc,file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt"))
-      saveResult(ad,file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))
+      saveResult(qual,file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))
     }
     else{
       stop("No read is found with valid barcode, please check if your barcode and fastq file match!")
     }
   }
 
-  return(list(reads_bc,ad))
+  return(list(reads_bc,qual))
 }
 
 
