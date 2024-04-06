@@ -9,6 +9,7 @@ cells_genes_isos_count(
   gtf,
   thresh = 3,
   overlap_thresh = 0.25,
+  filter_only_intron = TRUE,
   cell_col = "cell",
   gene_col = "gene",
   transcript_col = "isoform",
@@ -29,6 +30,8 @@ cells_genes_isos_count(
 \item{thresh}{The maximum threshold for the total offset of middle splicing sites.}
 
 \item{overlap_thresh}{The minimum threshold for the coverage of the annotated isoform.}
+
+\item{filter_only_intron}{A boolean to indicate if read only cover intron part should be preserved.}
 
 \item{cell_col}{The name of the column in the input data which records the cell barcode.}
 

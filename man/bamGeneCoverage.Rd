@@ -16,7 +16,7 @@ bamGeneCoverage(bam, gene_range_bed, outdir, bedtools = "bedtools")
 \item{bedtools}{The path for the bedtools.}
 }
 \value{
-A bed file including all genes with read alignment in the bam file.
+A bed file including all genes without read alignment in the bam file.
 }
 \description{
 detected genes with alignment in the bam file.

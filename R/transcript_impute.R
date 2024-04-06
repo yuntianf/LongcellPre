@@ -79,7 +79,6 @@ intron_only = function(reads,gtf,gtf_start_col = "start",gtf_end_col = "end",
 #' @param end_bias The maximum threshold for the offset of start and end position.
 #' @param gtf_gene_col the name of the column which stores gene name in the gtf.
 #' @param gtf_iso_col the name of the column which stores isoform name in the gtf.
-#' @param filter_only_intron A boolean to indicate if read only cover intron part should be preserved.
 #' @importFrom dplyr reframe
 #' @importFrom dplyr arrange_at
 #' @importFrom dplyr group_by
@@ -92,7 +91,6 @@ iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.25,
                       end_bias = 200,
                       gtf_gene_col = "gene",gtf_iso_col = "transname",
                       gtf_start_col = "start",gtf_end_col = "end",
-                      filter_only_intron = TRUE,
                       sep = ",",split = "|"){
   sub_gtf = gtf %>% filter_at(gtf_gene_col,~.==gene) %>%
     arrange_at(c(gtf_iso_col,gtf_start_col,gtf_end_col))
@@ -103,13 +101,6 @@ iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.25,
   sub_gtf_iso = as.data.frame(sub_gtf_iso)
 
   transcripts_uniq = unique(transcripts)
-
-  if(filter_only_intron){
-    intron_flag = intron_only(transcripts_uniq,sub_gtf,
-                              gtf_start_col,gtf_end_col,
-                              sep,split)
-    transcripts_uniq = transcripts_uniq[!intron_flag]
-  }
 
   #return(list(transcripts_uniq,sub_gtf_iso))
   transcripts_iso_corres = isoset_mid_diff(transcripts_uniq,sub_gtf_iso$iso,
@@ -219,6 +210,7 @@ iso_count_impute = function(data,cell_col = "cell",
 #' @inheritParams iso_count_impute
 #' @param gene_col The name of the column in the input data which records the gene name.
 #' @param transcript_col The name of the column in the input data which records the isoform.
+#' @param filter_only_intron A boolean to indicate if read only cover intron part should be preserved.
 #' @importFrom magrittr %>%
 #' @importFrom dplyr left_join
 #' @importFrom dplyr group_by_at
@@ -227,6 +219,7 @@ iso_count_impute = function(data,cell_col = "cell",
 #' @importFrom tidyr pivot_wider
 #' @export
 cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
+                                  filter_only_intron = TRUE,
                                   cell_col = "cell",gene_col = "gene",
                             transcript_col = "isoform",count_col = "count",
                             gtf_gene_col = "gene",gtf_iso_col = "transname",
@@ -238,8 +231,21 @@ cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
   out = lapply(gene_uniq,function(i){
     #print(i)
     sub_data = data %>% filter_at(gene_col,~.==i)
+    sub_gtf = gtf %>% filter_at(gtf_gene_col,~.==gene) %>%
+      arrange_at(c(gtf_iso_col,gtf_start_col,gtf_end_col))
+
+    if(filter_only_intron){
+      transcripts_uniq = unique(sub_data[,transcript_col])
+      intron_flag = intron_only(transcripts_uniq,sub_gtf,
+                                gtf_start_col,gtf_end_col,
+                                sep,split)
+      transcripts_uniq = transcripts_uniq[!intron_flag]
+
+      sub_data = sub_data %>% filter_at(transcript_col,~.%in% transcripts_uniq)
+    }
+
     iso_index = iso_corres(sub_data[,transcript_col],
-                           gene = i,gtf = gtf,thresh = thresh,
+                           gene = i,gtf = sub_gtf,thresh = thresh,
                            overlap_thresh = overlap_thresh,
                            gtf_gene_col = gtf_gene_col,
                            gtf_iso_col = gtf_iso_col,
