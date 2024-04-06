@@ -231,7 +231,7 @@ cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
   out = lapply(gene_uniq,function(i){
     #print(i)
     sub_data = data %>% filter_at(gene_col,~.==i)
-    sub_gtf = gtf %>% filter_at(gtf_gene_col,~.==gene) %>%
+    sub_gtf = gtf %>% filter_at(gtf_gene_col,~.==i) %>%
       arrange_at(c(gtf_iso_col,gtf_start_col,gtf_end_col))
 
     if(filter_only_intron){
