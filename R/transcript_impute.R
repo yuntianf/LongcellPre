@@ -240,7 +240,9 @@ cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
                                 gtf_start_col,gtf_end_col,
                                 sep,split)
       transcripts_uniq = transcripts_uniq[!intron_flag]
-
+      if(length(transcripts_uniq) == 0){
+        return(NULL)
+      }
       sub_data = sub_data %>% filter_at(transcript_col,~.%in% transcripts_uniq)
     }
 
