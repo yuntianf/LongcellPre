@@ -40,6 +40,7 @@ RunLongcellPre(fastq = fastq,barcode_path = barcodes,toolkit = toolkit,
                gtf_path = gtf_path,minimap_bed_path = minimap_bed_path,work_dir = work_dir,
                samtools = samtools, minimap2 = minimap2,bedtools = bedtools,cores = 4, strategy="multicore")
 ```
+For a more detailed explanation of steps for LongcellPre, please refer to https://github.com/yuntianf/LongcellPre/blob/main/vignettes/LongcellPre.ipynb
 
 ## Citation
 
