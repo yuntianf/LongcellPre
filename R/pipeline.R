@@ -11,7 +11,11 @@ init = function(work_dir){
   dir.create(file.path(work_dir,"BarcodeMatch"),showWarnings = FALSE)
   dir.create(file.path(work_dir,"bam"),showWarnings = FALSE)
   dir.create(file.path(work_dir,"out"),showWarnings = FALSE)
-  return(NULL)
+
+  out_path = normalizePath(work_dir)
+
+  message = paste("The output path would be set in",out_path,sep = " ")
+  return(message)
 }
 
 #' @title saveResult
