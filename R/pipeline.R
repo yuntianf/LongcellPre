@@ -269,7 +269,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
                         out_name = file.path(work_dir,"polish.fq.gz"),
                         # parameters to extract the tag region
                         toolkit = toolkit,adapter = adapter,
-                        window = window,step = step,len = tag_len,
+                        window = window,step = step,
                         left_flank = left_flank, right_flank = right_flank, drop_adapter = drop_adapter,
                         polyA_bin = polyA_bin,
                         polyA_base_count = polyA_base_count,polyA_len = polyA_len,
