@@ -22,6 +22,7 @@ umi_count_corres(
   bed_gene_col = "gene",
   bed_strand_col = "strand",
   to_isoform = TRUE,
+  filter_only_intron = TRUE,
   mid_offset_thresh = 3,
   overlap_thresh = 0,
   gtf_gene_col = "gene",
@@ -55,6 +56,8 @@ umi_count_corres(
 \item{splice_site_thresh}{The minimum threshold of occurance  for an splice site to be preserved}
 
 \item{verbose}{if print information during UMI clustering for each cell.}
+
+\item{filter_only_intron}{A boolean to indicate if read only cover intron part should be preserved.}
 
 \item{overlap_thresh}{The minimum threshold for the coverage of the annotated isoform.}
 

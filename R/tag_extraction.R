@@ -1,3 +1,36 @@
+#' @title seq_config
+#' @description Preset parameters for different sequencing protocol
+#' @param protocol The sequence protocol
+#' @param toolkit The kit to build the library, should be 5 or 3
+seq_config = function(protocol,toolkit){
+  if(protocol == "10X"){
+    if(toolkit == 5){
+      adapter = "TTTCTTATATGGG"
+    }
+    else{
+      adapter = "GCGTCGTGTAG"
+    }
+    left_flank = 55
+    right_flank = -10
+    drop_adapter =FALSE
+    barcode_len = 16
+    UMI_len = 10
+  }
+  else if(protocol == "Curio"){
+    adapter = "TCTCGGGAACGCTGAAGA"
+    left_flank = 25
+    right_flank = 25
+    drop_adapter =TRUE
+    barcode_len = 14
+    UMI_len = 9
+  }
+
+  out = list(adapter,left_flank,right_flank,drop_adapter,barcode_len,UMI_len)
+  names(out) = c("adapter","left_flank","right_flank","drop_adapter","barcode_len","UMI_len")
+  return(out)
+}
+
+
 #' @title extractTagBc
 #'
 #' @description Extract the tag region and identify cell barcode in the ta region
@@ -11,7 +44,8 @@
 #' @param adapter The sequence of the adapter which is aside the cell barcode
 #' @param window The window size to search the substring of adapter in the read
 #' @param step The step size to search the substring of adapter in the read
-#' @param len The length of tag region to be extratced
+#' @param left_flank,right_flank The length of the left/right part aside the adapter to be extracted
+#' @param drop_adapter A flag to indicate if the adapter region should be removed from the tag region.
 #' @param polyA_bin The window size to search for polyA.
 #' @param polyA_base_count The minimum threshold of the number of A within the polyA search window
 #' @param polyA_len The maximum length of polyA to be preserved in the read
@@ -44,31 +78,31 @@
 #'
 extractTagBc = function(fastq_path,barcode_path,out_name,
                         # parameters to extract the tag region
-                        toolkit,adapter = NULL,
-                        window = 10,step = 2,len = 55,
+                        toolkit,protocol = "10X", adapter = NULL,
+                        window = 10,step = 2,
+                        left_flank = 0, right_flank = 0, drop_adapter = FALSE,
                         polyA_bin = 20,polyA_base_count = 15,polyA_len = 10,
                         # parameters for barcode match
-                        mu = 20, sigma = 10, k = 6, batch = 100,
+                        barcode_len = 16,mu = 20, sigma = 10, k = 6, batch = 100,
                         top = 5, cos_thresh = 0.25, alpha = 0.05,
                         edit_thresh = 3,mean_edit_thresh = 1.5,
                         UMI_len = 10, UMI_flank = 1,
                         # parameter for parallel
                         cores = 1){
-  if(is.null(adapter)){
-    if(toolkit == 5){
-      adapter = "TTTCTTATATGGG"
-    }
-    else if(toolkit == 3){
-      adapter = "GCGTCGTGTAG"
-    }
-  }
+
+  config = seq_config(protocol,toolkit)
 
   reads = extractTagFastq(fastq_path,out_name,
-                        adapter,toolkit,window,step,len,
-                        polyA_bin,polyA_base_count,polyA_len)
+                          config$adapter,toolkit,window,step,
+                          config$left_flank,config$right_flank,config$drop_adapter,
+                          polyA_bin,polyA_base_count,polyA_len)
+
+  if(length(reads) == 0 || nrow(reads) == 0){
+    stop("Please check if your adapter sequence is correct!")
+  }
 
   barcode = read.table(barcode_path)[,1]
-  barcode = substr(barcode,1,16)
+  barcode = substr(barcode,1,config$barcode_len)
 
   if(toolkit == 5){
     reads$tag = stringi::stri_reverse(reads$tag)

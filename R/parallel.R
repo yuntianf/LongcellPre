@@ -6,7 +6,7 @@
 #' @param cores Number of cores used to do parallization.
 #' @importFrom parallel detectCores
 coreDetect = function(cores){
-  max_cores = detectCores()
+  max_cores = parallel::detectCores()
   if(cores > max_cores){
     warning(paste(c("Distributed number of cores exceed the maximum, will use all ",
                     max_core, " cores for parallization!"),sep = ""))

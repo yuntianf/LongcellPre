@@ -80,8 +80,6 @@ BarcodeMatch = function(seq, barcodes,
                         k = 6, batch = 100,top = 5, cos_thresh = 0.25, alpha = 0.05,
                         edit_thresh = 3,mean_edit_thresh = 1.5,
                         UMI_len = 10,UMI_flank = 1,cores = 1){
-  cores = coreDetect(cores)
-
   n = length(seq)
 
   seq = as.data.frame(cbind(1:length(seq),seq))

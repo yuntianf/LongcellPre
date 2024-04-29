@@ -9,13 +9,17 @@ extractTagBc(
   barcode_path,
   out_name,
   toolkit,
+  protocol = "10X",
   adapter = NULL,
   window = 10,
   step = 2,
-  len = 55,
+  left_flank = 0,
+  right_flank = 0,
+  drop_adapter = FALSE,
   polyA_bin = 20,
   polyA_base_count = 15,
   polyA_len = 10,
+  barcode_len = 16,
   mu = 20,
   sigma = 10,
   k = 6,
@@ -45,7 +49,9 @@ extractTagBc(
 
 \item{step}{The step size to search the substring of adapter in the read}
 
-\item{len}{The length of tag region to be extratced}
+\item{left_flank, right_flank}{The length of the left/right part aside the adapter to be extracted}
+
+\item{drop_adapter}{A flag to indicate if the adapter region should be removed from the tag region.}
 
 \item{polyA_bin}{The window size to search for polyA.}
 
