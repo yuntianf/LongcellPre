@@ -40,6 +40,10 @@ RunLongcellPre(fastq = fastq,barcode_path = barcodes,toolkit = toolkit,
                gtf_path = gtf_path,minimap_bed_path = minimap_bed_path,work_dir = work_dir,
                samtools = samtools, minimap2 = minimap2,bedtools = bedtools,cores = 4, strategy="multicore")
 ```
+For a more detailed explanation of steps for LongcellPre, please refer to https://github.com/yuntianf/LongcellPre/blob/main/vignettes/LongcellPre.ipynb
+
+The isoform quantification would be output in a long table with 5 columns, including `cell`, `gene`, `isoform`, `count` and `polyA`. Due to the UMI scattering filtering, some values in `count` may not be integer. And `polyA` is the average of polyA exitence with a UMI cluster.
+The the gtf isoform annotation is provided, each isoform would be aligned to the canonical isoform and a cell by isoform matrix would also be generated.
 
 ## Citation
 
