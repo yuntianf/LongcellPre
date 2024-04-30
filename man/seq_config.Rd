@@ -4,12 +4,29 @@
 \alias{seq_config}
 \title{seq_config}
 \usage{
-seq_config(protocol, toolkit)
+seq_config(
+  protocol,
+  toolkit,
+  adapter,
+  left_flank,
+  right_flank,
+  drop_adapter,
+  barcode_len,
+  UMI_len
+)
 }
 \arguments{
 \item{protocol}{The sequence protocol}
 
 \item{toolkit}{The kit to build the library, should be 5 or 3}
+
+\item{adapter}{The sequence of the adapter which is aside the cell barcode}
+
+\item{left_flank, right_flank}{The length of the left/right part aside the adapter to be extracted}
+
+\item{drop_adapter}{A flag to indicate if the adapter region should be removed from the tag region.}
+
+\item{barcode_len, UMI_len}{The length of the cell barcode/UMI}
 }
 \description{
 Preset parameters for different sequencing protocol

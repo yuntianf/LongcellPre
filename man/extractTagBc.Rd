@@ -59,6 +59,8 @@ extractTagBc(
 
 \item{polyA_len}{The maximum length of polyA to be preserved in the read}
 
+\item{barcode_len, UMI_len}{The length of the cell barcode/UMI}
+
 \item{mu}{The initial expectation of the start positions for cell barcodes in the tag region}
 
 \item{sigma}{The initial variance of the start positions for cell barcodes in the tag region}
@@ -78,8 +80,6 @@ candidate barcodes.}
 
 \item{edit_thresh}{The maximum threshold for the edit distance of the barcode alignment, alighment with
 edit distance over the threshold would be filtered out.}
-
-\item{UMI_len}{The length of the UMI}
 
 \item{cores}{The number of cores to use for parallization}
 

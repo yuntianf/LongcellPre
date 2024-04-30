@@ -10,6 +10,7 @@ RunLongcellPre(
   toolkit,
   genome_path,
   genome_name,
+  protocol = "10X",
   adapter = NULL,
   gtf_path = NULL,
   gene_bed_path = NULL,

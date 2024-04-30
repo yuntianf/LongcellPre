@@ -2,7 +2,14 @@
 #' @description Preset parameters for different sequencing protocol
 #' @param protocol The sequence protocol
 #' @param toolkit The kit to build the library, should be 5 or 3
-seq_config = function(protocol,toolkit){
+#' @param adapter The sequence of the adapter which is aside the cell barcode
+#' @param left_flank,right_flank The length of the left/right part aside the adapter to be extracted
+#' @param drop_adapter A flag to indicate if the adapter region should be removed from the tag region.
+#' @param barcode_len,UMI_len The length of the cell barcode/UMI
+seq_config = function(protocol,toolkit,
+                      adapter,
+                      left_flank,right_flank,drop_adapter,
+                      barcode_len,UMI_len){
   if(protocol == "10X"){
     if(toolkit == 5){
       adapter = "TTTCTTATATGGG"
@@ -23,6 +30,9 @@ seq_config = function(protocol,toolkit){
     drop_adapter =TRUE
     barcode_len = 14
     UMI_len = 9
+  }
+  else{
+    warning("The protocol you specified is not incorporated yet, please specify your config!")
   }
 
   out = list(adapter,left_flank,right_flank,drop_adapter,barcode_len,UMI_len)
@@ -61,7 +71,7 @@ seq_config = function(protocol,toolkit){
 #' @param alpha The size of the confidence interval for the start position of cell barcode alignment
 #' @param edit_thresh The maximum threshold for the edit distance of the barcode alignment, alighment with
 #' edit distance over the threshold would be filtered out.
-#' @param UMI_len The length of the UMI
+#' @param barcode_len,UMI_len The length of the cell barcode/UMI
 #' @param flank The length of flank when extract UMI, which is used to be tolerant of indels and dels.
 #' @param cores The number of cores to use for parallization
 #'
@@ -90,7 +100,10 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
                         # parameter for parallel
                         cores = 1){
 
-  config = seq_config(protocol,toolkit)
+  config = seq_config(protocol,toolkit,
+                      adapter,
+                      left_flank,right_flank,drop_adapter,
+                      barcode_len,UMI_len)
 
   reads = extractTagFastq(fastq_path,out_name,
                           config$adapter,toolkit,window,step,

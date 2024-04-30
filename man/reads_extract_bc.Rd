@@ -12,14 +12,19 @@ reads_extract_bc(
   genome_path,
   genome_name,
   toolkit,
+  protocol = "10X",
   minimap_bed_path = NULL,
   work_dir = "./",
   window = 10,
   step = 2,
   tag_len = 55,
+  left_flank = 0,
+  right_flank = 0,
+  drop_adapter = FALSE,
   polyA_bin = 20,
   polyA_base_count = 15,
   polyA_len = 10,
+  barcode_len = 16,
   mu = 15,
   sigma = 10,
   k = 6,
@@ -62,11 +67,17 @@ reads_extract_bc(
 
 \item{step}{The step size to search the substring of adapter in the read}
 
+\item{left_flank, right_flank}{The length of the left/right part aside the adapter to be extracted}
+
+\item{drop_adapter}{A flag to indicate if the adapter region should be removed from the tag region.}
+
 \item{polyA_bin}{The window size to search for polyA.}
 
 \item{polyA_base_count}{The minimum threshold of the number of A within the polyA search window}
 
 \item{polyA_len}{The maximum length of polyA to be preserved in the read}
+
+\item{barcode_len, UMI_len}{The length of the cell barcode/UMI}
 
 \item{mu}{The initial expectation of the start positions for cell barcodes in the tag region}
 
@@ -87,8 +98,6 @@ candidate barcodes.}
 
 \item{edit_thresh}{The maximum threshold for the edit distance of the barcode alignment, alighment with
 edit distance over the threshold would be filtered out.}
-
-\item{UMI_len}{The length of the UMI}
 
 \item{minimap2}{The path of the minimap2}
 
