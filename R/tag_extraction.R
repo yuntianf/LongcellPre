@@ -104,6 +104,8 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
                       adapter,
                       left_flank,right_flank,drop_adapter,
                       barcode_len,UMI_len)
+  barcode_len = config$barcode_len
+  UMI_len = config$UMI_len
 
   reads = extractTagFastq(fastq_path,out_name,
                           config$adapter,toolkit,window,step,
@@ -115,7 +117,7 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
   }
 
   barcode = read.table(barcode_path)[,1]
-  barcode = substr(barcode,1,config$barcode_len)
+  barcode = substr(barcode,1,barcode_len)
 
   if(toolkit == 5){
     reads$tag = stringi::stri_reverse(reads$tag)

@@ -24,7 +24,6 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
   gene_cells_cluster = gene_cells_cluster[gene_isoform$id,]
   gene_isoform = gene_isoform %>% dplyr::select(-id)
 
-
   if(ncol(gene_isoform) > 2){
     filter = as.data.frame(gene_isoform %>% dplyr::select(-c(start,end)))
     filter = colSums(filter,na.rm = TRUE) > 0
@@ -32,34 +31,10 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
   }
 
   #return(list(gene_cells_cluster,gene_isoform))
-  if(ncol(gene_isoform) > 2){
-    splice_sites = colnames(gene_isoform)[2:(ncol(gene_isoform)-1)]
-    mid = apply(gene_isoform[,splice_sites],1,function(x) paste(x,collapse = ","))
-
-    isoform_filtered = cells_mid_filter(gene_cells_cluster$cell,
-                                        gene_cells_cluster$cluster,
-                                        mid)
-  }
-  else{
-    splice_sites = c()
-    mid = NA
-    isoform_filtered = c()
-  }
-
-  gene_isoform = as.data.frame(cbind(gene_cells_cluster[,c("cell","cluster","polyA")],
-                                     gene_isoform[,"start"],mid,gene_isoform[,"end"]))
-  colnames(gene_isoform) = c("cell","cluster","polyA","start","mid","end")
-  #return(list(gene_cells_cluster,gene_isoform,isoform_filtered))
-  gene_isoform = isoform_correct(gene_isoform,
-                                 isoform_filtered)
-  gene_isoform = gene_isoform %>% filter(!is.na(start))
-  #return(list(gene_isoform,splice_sites))
-  gene_isoform$isoform <- apply(gene_isoform,1,function(x){
-    site_recover(x["start"],x["mid"],x["end"],splice_sites)
-  })
-  gene_isoform <- na.omit(gene_isoform) %>% dplyr::select(-c(start,end))
-  gene_isoform$mid[is.na(gene_isoform$mid)] = "null"
-
+  gene_isoform = cells_isoform_correct(gene_cells_cluster$cell,
+                                       gene_cells_cluster$cluster,
+                                       gene_isoform,
+                                       gene_cells_cluster$polyA)
   #return(gene_isoform)
   if(nrow(gene_isoform) == 0){
     return(gene_isoform)

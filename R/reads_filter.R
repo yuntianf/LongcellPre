@@ -17,7 +17,7 @@ frNN_dis <- function(dis,n,eps = 10,if_direct = FALSE){
     colnames(dis) <- c("node1","node2","dist")
     dis <- dis[order(dis$node1),]
 
-    out_frNN <- frNN(as.dist(1), eps = eps)
+    out_frNN <- dbscan::frNN(as.dist(1), eps = eps)
 
     out_frNN$dist <- lapply(1:n,function(i){
       return(dis[dis$node1 == i,"dist"])
@@ -27,7 +27,7 @@ frNN_dis <- function(dis,n,eps = 10,if_direct = FALSE){
     })
     out_frNN$sort <- F
 
-    out_frNN <- frNN(out_frNN,eps = eps)
+    out_frNN <- dbscan::frNN(out_frNN,eps = eps)
 
     return(out_frNN)
 }

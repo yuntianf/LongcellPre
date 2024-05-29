@@ -271,8 +271,8 @@ cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
     return(sub_out)
   })
   out = do.call(rbind,out)
-  out = as.data.frame(tidyr::pivot_wider(out,names_from = "cell",values_from = "count"))
+  #out = as.data.frame(tidyr::pivot_wider(out,names_from = "cell",values_from = "count"))
 
-  out[is.na(out)] = 0
+  #out[is.na(out)] = 0
   return(out)
 }

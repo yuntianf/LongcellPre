@@ -45,6 +45,72 @@ splice_site_table <- function(isoforms,polyA,strand,
   return(out)
 }
 
+#' @title mid_len
+#'
+#' @description count the number of middle splicing sites covered by a read
+#'
+#' @param mid A vector of strings, each string denotes the existence of the middle splicing sites
+#' @param sep The character to seperate splicing sites in the string
+#' @return A dataframe with two columns, the first column denotes the middle splicing sites,
+#' the second denotes the number of sites which covered.
+mid_len = function(mid,sep = ","){
+  mat = strsplit(mid,split = sep,fixed = TRUE)
+  mat = do.call(rbind,mat)
+  suppressWarnings(storage.mode(mat) <- "numeric")
+
+  out = as.data.frame(cbind(mid,rowSums(!is.na(mat))))
+  colnames(out) = c("mid","size")
+  out = out %>% mutate(size = as.numeric(size))
+  return(out)
+}
+
+#' @title mid_group
+#'
+#' @description group middle splicing sites which can transform to each other by truncations.
+#'
+#' @inheritParams mid_len
+#' @return A dataframe with two columns, the first column denotes the middle splicing site string,
+#' the second denotes the splicing site string that can transform to this splicing site string by
+#' truncations.
+mid_group = function(mid,sep = ","){
+  mat = strsplit(mid,split = sep,fixed = TRUE)
+  mat = do.call(rbind,mat)
+  suppressWarnings(storage.mode(mat) <- "numeric")
+
+  mid = mid[order(rowSums(is.na(mat)),decreasing = TRUE)]
+  mat = mat[order(rowSums(is.na(mat)),decreasing = TRUE),]
+
+  is_subset = function(child, parent){
+    if(length(child) != length(parent)){
+      stop("The length of two input vectors should be the same!")
+    }
+    if(sum(is.na(child)|is.na(parent))!=sum(is.na(child))){
+      return(FALSE)
+    }
+    diff = xor(child,parent)
+    diff[is.na(diff)] = 0
+    if(sum(diff) == 0){
+      return(TRUE)
+    }
+    else{
+      return(FALSE)
+    }
+  }
+
+  result = lapply(1:(nrow(mat)-1),function(i){
+    sub = lapply((i+1):nrow(mat),function(j){
+      if(is_subset(mat[i,],mat[j,])){
+        return(c(i,j))
+      }
+    })
+    sub = do.call(rbind,sub)
+  })
+  result = as.data.frame(do.call(rbind,result))
+  colnames(result) = c("c","p")
+  result = result %>% mutate(c = mid[c],p = mid[p])
+  return(result)
+}
+
 #' @title mid_count
 #'
 #' @description Count the frequency of middle splicing sites for each UMI cluster.
@@ -52,22 +118,58 @@ splice_site_table <- function(isoforms,polyA,strand,
 #' as the representative and other splicing sites will be attributed to the representative.
 #'
 #' @param mid A string vector of middle splicing sites within a UMI cluster
+#' @param total All types of middl splicing sites vector
+#' @param parent The middle splicing site group output from "mid_group"
+#' @param len The number of covered splicing sites for each read output from mid_len.
 #' @return A dataframe, the first column is the original middle splicing sites, the second column is the chosen
 #' representative within this UMI cluster, the third column stores the count of the original.
-mid_count = function(mid,total){
-  count = table(mid)
-  name = names(count)
-  #count = count*log(sum(count),2)
+# mid_count = function(mid,total){
+#   count = table(mid)
+#   name = names(count)
+#   #count = count*log(sum(count),2)
 
-  if(length(name) == 1){
-    mid_coexist = cbind(name,name,count)
+#   if(length(name) == 1){
+#     mid_coexist = cbind(name,name,count)
+#   }
+#   else{
+#     mode_mid = name[which(count == max(count))]
+#     mode_mid = total[total %in% mode_mid][1]
+#     mid_coexist = cbind(name,mode_mid,count)
+#   }
+#   rownames(mid_coexist) = NULL
+#   return(mid_coexist)
+# }
+mid_count = function (mid, total, parent, len) {
+  count_list = table(mid)
+  count_mat = as.data.frame(count_list)
+  colnames(count_mat) = c("mid","count")
+  count_mat = count_mat %>% mutate(mid = as.character(mid))
+  if(nrow(count_mat) < 2){
+    mid_coexist = cbind(count_mat$mid,
+                        count_mat$mid,
+                        count_mat$count)
+    return(mid_coexist)
+  }
+  count_mat = left_join(count_mat,len,by = "mid")
+  count_mat = count_mat %>% arrange(-count,-size)
+  count_mat = count_mat[1:2,]
+
+  #start = Sys.time()
+  count_mat = suppressWarnings(left_join(count_mat,
+                                         parent %>% filter(p %in% count_mat$mid),
+                                         by = c("mid" = "c")))
+  #return(count_mat)
+  if(sum(is.na(count_mat$p)) == 1){
+    mode_mid = count_mat$mid[is.na(count_mat$p)]
+    mid_coexist = cbind(mode_mid, mode_mid, sum(count_mat$count))
   }
   else{
-    mode_mid = name[which(count == max(count))]
-    mode_mid = total[total %in% mode_mid][1]
-    mid_coexist = cbind(name,mode_mid,count)
+    mode_mid = count_mat$mid[1]
+    mid_coexist = cbind(count_mat$mid, mode_mid, count_mat$count)
   }
   rownames(mid_coexist) = NULL
+  #end = Sys.time()
+  #print(end - start)
   return(mid_coexist)
 }
 
@@ -142,10 +244,13 @@ cells_mid_filter <- function(cells,cluster,isoform_mid){
   total = sort(table(isoform_mid),decreasing = TRUE)
   total = names(total)
 
+  len = mid_len(total)
+  parent = mid_group(total)
+
   temp = as.data.frame(cbind(cells,cluster,isoform_mid))
   colnames(temp) = c("cell","cluster","mid")
 
-  temp = temp %>% group_by(cell,cluster) %>% reframe(coexist = mid_count(mid,total))
+  temp = temp %>% group_by(cell,cluster) %>% reframe(coexist = mid_count(mid,total,parent,len))
   coexist = as.data.frame(temp$coexist)
   colnames(coexist) = c("from","to","count")
   coexist$count = as.numeric(coexist$count)
@@ -228,6 +333,104 @@ cells_mid_filter <- function(cells,cluster,isoform_mid){
   return(isoform_corres_new)
 }
 
+mid_correct_input = function(cells,cluster,gene_isoform){
+  if(nrow(gene_isoform) != length(cells)){
+    stop("The size of isoforms and cells don't match!")
+  }
+  if(length(cluster) != length(cells)){
+    stop("The size of clusters and cells don't match!")
+  }
+  mid = apply(gene_isoform[,2:(ncol(gene_isoform)-1)],
+              1,function(x) paste(x,collapse = ","))
+  out = as.data.frame(cbind(cells,cluster,
+                            gene_isoform$start,mid,gene_isoform$end))
+  colnames(out) = c("cell","cluster","start","mid","end")
+  return(out)
+}
+
+mid_coexist = function(data){
+  total = sort(table(data$mid),decreasing = TRUE)
+  total = names(total)
+
+  len = mid_len(total)
+  parent = mid_group(total)
+
+  data = data %>% group_by(cell,cluster) %>%
+    reframe(coexist = mid_count(mid,total,parent,len))
+  coexist = as.data.frame(data$coexist)
+  colnames(coexist) = c("from","to","count")
+  coexist$count = as.numeric(coexist$count)
+  concensus = as.data.frame(cbind(data[,c("cell","cluster")],
+                                  coexist[,"to",drop = FALSE])) %>%
+    group_by(cell,cluster) %>%
+    summarise(concensus = unique(to),.groups = "drop")
+
+  coexist = coexist %>% group_by(from,to) %>%
+    summarise(count = sum(count),.groups = "drop")
+  return(list(concensus,coexist))
+}
+
+isoform_corres = function(coexist_matrix){
+  isoform_coexist_filter <- cbind(diag(coexist_matrix),
+                                  rowSums(coexist_matrix)-diag(coexist_matrix))
+  isoform_coexist_filter <- isoform_coexist_filter[order(isoform_coexist_filter[,1],
+                                                         decreasing = T),]
+  isoform_coexist_filter <- names(which(isoform_coexist_filter[,1] >
+                                          2*isoform_coexist_filter[,2]))
+
+  corres = as.data.frame(coexist_matrix[,isoform_coexist_filter])
+  corres = sapply(1:nrow(corres),function(i){
+    x = unlist(corres[i,])
+    if(sum(x) == 0){
+      return(NA)
+    }
+    return(isoform_coexist_filter[which(x == max(x))[1]])
+  })
+
+  corres = as.data.frame(cbind(rownames(coexist_matrix),corres))
+  colnames(corres) = c("from","to")
+  rownames(corres) = corres$from
+
+  disagree = corres %>% filter(from != to,!is.na(to))
+  if(nrow(disagree) == 0){
+    return(corres)
+  }
+  ds = disagree_sites(disagree$from,disagree$to)
+  id = which(ds$wrong > ds$correct & ds$disagree*3 > ds$wrong)
+
+  if(length(id) == 0){
+    return(corres)
+  }
+
+  correct_iso = na.omit(unique(corres$to))
+  to_table = do.call(rbind,strsplit(correct_iso,split = ","))
+  to_table <- suppressWarnings(matrix(as.numeric(to_table),ncol = ncol(to_table)))
+  to_table[is.na(to_table)] = 0
+  if(length(id) == 1){
+    correct_iso = correct_iso[to_table[,id] == 0]
+  }
+  else if(nrow(to_table) == 1){
+    correct_iso = correct_iso[sum(to_table[,id]) == 0]
+  }
+  else{
+    correct_iso = correct_iso[rowSums(to_table[,id]) == 0]
+  }
+
+  corres_new = as.data.frame(coexist_matrix[,correct_iso])
+  corres_new = sapply(1:nrow(corres),function(i){
+    x = unlist(corres_new[i,])
+    if(sum(x) == 0){
+      return(NA)
+    }
+    return(correct_iso[which(x == max(x))[1]])
+  })
+
+  corres_new = as.data.frame(cbind(rownames(coexist_matrix),corres_new))
+  colnames(corres_new) = c("from","to")
+  rownames(corres_new) = corres_new$from
+  return(corres_new)
+}
+
 #' @title cluster_isoform_correct
 #'
 #' @description Corret for wrong mapping and truncation within each UMI cluster
@@ -240,7 +443,7 @@ cells_mid_filter <- function(cells,cluster,isoform_mid){
 #' @param preserve_mid A string vector indicating preserved patterns of middle splice sites
 #' @return A vector including the corrected start, middle splicing sites, end position, polyA existence
 #' and the number of reads within this UMI cluster
-cluster_isoform_correct <- function(start,mid,end,polyA,preserve_mid){
+cluster_isoform_correct <- function(start,mid,end,concensus,polyA,preserve_mid){
     if(length(start) != length(mid) || length(start) != length(end)){
       stop("The size of isoforms representation don't match!")
     }
@@ -248,50 +451,35 @@ cluster_isoform_correct <- function(start,mid,end,polyA,preserve_mid){
         stop("The size of isoforms and polyA don't match!")
     }
     cluster_size = length(start)
+    mode_isoform = NA
+    mode_start = NA
+    mode_end = NA
+    mode_polyA = NA
 
-    if(length(preserve_mid) > 0 && nrow(preserve_mid) > 0 & !is.na(mid[1])){
-        mid_corres = na.omit(preserve_mid[mid,"to"])
-
-        if(length(mid_corres) == 0){
-          mode_isoform = NA
-          mode_start = NA
-          mode_end = NA
-          polyA = NA
-          return(c(mode_start,mode_isoform,mode_end,cluster_size,polyA))
+    if(length(preserve_mid) > 0 && nrow(preserve_mid) > 0){
+      mid_corres = na.omit(preserve_mid[concensus,"to"])
+      if(length(mid_corres) > 0){
+        mode_isoform = mid_corres
+        mode_preserve = which(mid == mode_isoform)
+        if(length(mode_preserve) == 0){
+          mode_start = -1
+          mode_end = -1
         }
         else{
-          mode_isoform = table(mid_corres)
-          mode_isoform = names(mode_isoform[which(mode_isoform == max(mode_isoform))])
-          if(length(mode_isoform) > 1){
-            loc= which(mid_corres %in% mode_isoform)
-            mode_isoform = mode_isoform[which(loc == min(loc))]
-          }
-          mode_preserve = which(mid == mode_isoform)
+          mode_start = min(start[mode_preserve])
+          #mode_start = table(start[mode_preserve])
+          #mode_start = min(as.numeric(names(mode_start[which(mode_start == max(mode_start))])))
+
+          mode_end = max(end[mode_preserve])
+          #mode_end = table(end[start == mode_start])
+          #mode_end = max(as.numeric(names(mode_end[which(mode_end == max(mode_end))])))
         }
-    }
-    else{
-        mode_preserve = 1:length(start)
-        mode_isoform = NA
-    }
-
-
-    if(length(mode_preserve) == 0){
-      mode_start = -1
-      mode_end = -1
-      polyA = 0
-    }
-    else{
-      mode_start = table(start[mode_preserve])
-      mode_start = min(as.numeric(names(mode_start[which(mode_start == max(mode_start))])))
-
-      mode_end = table(end[start == mode_start])
-      mode_end = max(as.numeric(names(mode_end[which(mode_end == max(mode_end))])))
-
-      polyA = as.logical(polyA)
-      polyA = mean(as.numeric(polyA[mode_preserve]))
+        polyA = as.logical(polyA)
+        mode_polyA = mean(as.numeric(polyA[mid == concensus]))
+      }
     }
 
-    return(c(mode_start,mode_isoform,mode_end,cluster_size,polyA))
+    return(c(mode_start,mode_isoform,mode_end,cluster_size,mode_polyA))
 }
 
 #' @title isoform_correct
@@ -309,19 +497,51 @@ cluster_isoform_correct <- function(start,mid,end,polyA,preserve_mid){
 #' and the number of reads of each UMI cluster for each gene in each cell
 isoform_correct <- function(gene_isoform,preserve_mid){
   gene_isoform_adjust = gene_isoform %>% group_by(cell,cluster) %>%
-                        summarise(adjust = list(cluster_isoform_correct(start,mid,end,polyA,preserve_mid)),.groups = "drop")
+                        summarise(adjust = list(cluster_isoform_correct(start,mid,end,unique(concensus),
+                                                                        polyA,preserve_mid)),.groups = "drop")
   adjust = as.data.frame(do.call(rbind,gene_isoform_adjust$adjust))
   colnames(adjust) = c("start","mid","end","size","polyA")
 
   adjust = adjust %>% mutate_at(c("start","end","size","polyA"),as.numeric)
-  adjust = adjust %>% group_by(mid) %>%
-    mutate_at(c("start","end"),~tidyr::replace_na(., median(., na.rm=TRUE)))
+  #adjust = adjust %>% group_by(mid) %>%
+  #  mutate_at(c("start","end"),~tidyr::replace_na(., median(., na.rm=TRUE)))
 
-  out = as.data.frame(cbind(gene_isoform_adjust[,c("cell","cluster")],adjust))
+  out = as.data.frame(cbind(gene_isoform_adjust[,c("cell")],adjust))
   return(out[!is.na(out$start),])
 }
 
+cells_mid_correct <- function(cells,cluster,gene_isoform,polyA){
+  data = mid_correct_input(cells,cluster,gene_isoform)
 
+  out = mid_coexist(data)
+  concensus = out[[1]]
+  coexist = out[[2]]
+
+  if(nrow(coexist) == 1){
+    isoform_corres = as.data.frame(coexist %>% dplyr::select(-count))
+    rownames(isoform_corres) = isoform_corres$from
+  }
+  # return(coexist)
+  coexist_matrix = long2square(coexist,"from","to","count",symmetric = FALSE)
+  corres = isoform_corres(coexist_matrix)
+
+  data = left_join(data,concensus,by = c("cell","cluster"))
+  data$polyA = polyA
+  # return(data)
+  data = isoform_correct(data,corres)
+  return(data)
+}
+
+cells_nomid_correct <- function(cells,cluster,gene_isoform,polyA){
+  data = as.data.frame(cbind(cells,cluster,gene_isoform,polyA))
+  colnames(data) = c("cell","cluster","start","end","polyA")
+
+  data = data %>% group_by(cell,cluster) %>%
+    summarise(start = min(start),end = max(end),
+              size = n(),
+              polyA = mean(polyA))
+  return(data)
+}
 
 #' @title site_recover
 #'
@@ -335,8 +555,8 @@ isoform_correct <- function(gene_isoform,preserve_mid){
 #' @param sep The character to seperate the start and end for each exon bin in the isoform representation
 #' @param split The character to seperate each exon bin in the isoform representation
 #' @return A string representing isoform
-site_recover <- function(start,mid,end,sites,sep = ",",split = "|"){
-    if(is.na(mid)){
+site_recover <- function(start,end,mid = NULL,sites = NULL,sep = ",",split = "|"){
+    if(is.null(sites)){
         splice_sites = paste(start,end,sep = sep)
     }
     else{
@@ -362,4 +582,25 @@ site_recover <- function(start,mid,end,sites,sep = ",",split = "|"){
     }
     splice_sites = gsub(" ","",splice_sites,fixed = TRUE)
     return(splice_sites)
+}
+
+cells_isoform_correct <- function(cells,cluster,gene_isoform,polyA){
+  if(ncol(gene_isoform) > 2){
+    splice_sites = colnames(gene_isoform)[2:(ncol(gene_isoform)-1)]
+    data = cells_mid_correct(cells,cluster,gene_isoform,polyA)
+    data$isoform <- apply(data,1,function(x){
+      site_recover(x["start"],x["end"],x["mid"],splice_sites)
+    })
+  }
+  else{
+    splice_sites = NULL
+    data = cells_nomid_correct(cells,cluster,gene_isoform,polyA)
+    data$isoform <- apply(data,1,function(x){
+      site_recover(x["start"],x["end"])
+    })
+    data$mid = "null"
+  }
+
+  data <- na.omit(data) %>% dplyr::select(-c(start,end))
+  return(data)
 }

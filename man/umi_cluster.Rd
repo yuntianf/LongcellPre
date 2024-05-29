@@ -4,7 +4,7 @@
 \alias{umi_cluster}
 \title{umi_cluster}
 \usage{
-umi_cluster(umi, iso = NULL, thresh = 7)
+umi_cluster(umi, iso = NULL, thresh = NULL)
 }
 \arguments{
 \item{umi}{a vector of UMIs.}

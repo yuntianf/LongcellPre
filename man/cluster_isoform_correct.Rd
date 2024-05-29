@@ -4,7 +4,7 @@
 \alias{cluster_isoform_correct}
 \title{cluster_isoform_correct}
 \usage{
-cluster_isoform_correct(start, mid, end, polyA, preserve_mid)
+cluster_isoform_correct(start, mid, end, concensus, polyA, preserve_mid)
 }
 \arguments{
 \item{start}{A numeric vector indicating start position of reads within the UMI cluster}

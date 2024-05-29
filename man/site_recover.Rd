@@ -4,14 +4,14 @@
 \alias{site_recover}
 \title{site_recover}
 \usage{
-site_recover(start, mid, end, sites, sep = ",", split = "|")
+site_recover(start, end, mid = NULL, sites = NULL, sep = ",", split = "|")
 }
 \arguments{
 \item{start}{A numeric value indicating start position of reads within the UMI cluster}
 
-\item{mid}{A string indicating patterns of middle splicing sites}
-
 \item{end}{A numeric value indicating end position of reads within the UMI cluster}
+
+\item{mid}{A string indicating patterns of middle splicing sites}
 
 \item{sites}{A string vector indicating middle splicing sites}
 

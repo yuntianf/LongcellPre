@@ -4,10 +4,16 @@
 \alias{mid_count}
 \title{mid_count}
 \usage{
-mid_count(mid, total)
+mid_count(mid, total, parent, len)
 }
 \arguments{
 \item{mid}{A string vector of middle splicing sites within a UMI cluster}
+
+\item{total}{All types of middl splicing sites vector}
+
+\item{parent}{The middle splicing site group output from "mid_group"}
+
+\item{len}{The number of covered splicing sites for each read output from mid_len.}
 }
 \value{
 A dataframe, the first column is the original middle splicing sites, the second column is the chosen

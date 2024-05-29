@@ -29,6 +29,25 @@ saveResult = function(data,filename){
   write.table(data,file  = filename,sep = "\t",quote = FALSE,row.names = FALSE)
 }
 
+#' @title saveSparse
+#'
+#' @description Save the result into a sparse matrix
+#' @details Write the cell by gene/isoform matrix into a sparse matrix
+#'
+#' @param data A matrix
+#' @param path The output file path
+saveSparse = function(data,path){
+  gene_mat = data %>% group_by(gene) %>% dplyr::select(-isoform) %>% summarise_all(~sum(.))
+  gene_mat = as.data.frame(gene_mat)
+  rownames(gene_mat) = gene_mat$gene
+  gene_mat = gene_mat %>% dplyr::select(-gene)
+
+  iso_mat = data %>% dplyr::select(-gene) %>% filter(isoform == "unknown")
+  iso_mat = as.data.frame(iso_mat)
+  rownames(iso_mat) = iso_mat$isoform
+  iso_mat = iso_mat %>% dplyr::select(-isoform)
+}
+
 #' @title paramExtract
 #'
 #' @description Extract parameters from the ... for a function
@@ -459,9 +478,10 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
         }
         return(sub_count_mat)
       },future.packages = c("Longcellsrc"),future.seed=TRUE)
-      count_mat = as.data.frame(do.call(dplyr::bind_rows,count_mat))
-      count_mat[is.na(count_mat)] = 0
-      saveResult(count_mat,file.path(dir,"iso_count_mat.txt"))
+        count_mat = as.data.frame(do.call(dplyr::bind_rows,count_mat))
+        #count_mat[is.na(count_mat)] = 0
+        #saveResult(count_mat,file.path(dir,"iso_count_mat.txt"))
+        saveIsoMat(count_mat,dir)
       })
       end_time <- Sys.time()
       duration = end_time-start_time
