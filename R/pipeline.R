@@ -18,69 +18,7 @@ init = function(work_dir){
   return(message)
 }
 
-#' @title saveResult
-#'
-#' @description Save the result into a file
-#' @details Write the dataframe result in a txt table file
-#'
-#' @param data A dataframe
-#' @param filename The output filename
-saveResult = function(data,filename){
-  write.table(data,file  = filename,sep = "\t",quote = FALSE,row.names = FALSE)
-}
 
-#' @title saveSparse
-#'
-#' @description Save the result into a sparse matrix
-#' @details Write the cell by gene/isoform matrix into a sparse matrix
-#'
-#' @param data A matrix
-#' @param path The output file path
-saveSparse = function(data,path){
-  gene_mat = data %>% group_by(gene) %>% dplyr::select(-isoform) %>% summarise_all(~sum(.))
-  gene_mat = as.data.frame(gene_mat)
-  rownames(gene_mat) = gene_mat$gene
-  gene_mat = gene_mat %>% dplyr::select(-gene)
-
-  iso_mat = data %>% dplyr::select(-gene) %>% filter(isoform == "unknown")
-  iso_mat = as.data.frame(iso_mat)
-  rownames(iso_mat) = iso_mat$isoform
-  iso_mat = iso_mat %>% dplyr::select(-isoform)
-}
-
-#' @title paramExtract
-#'
-#' @description Extract parameters from the ... for a function
-#' @details Extract parameters from the ... for a function
-#'
-#' @param func functions to be match with parameters
-#' @param ... Omitted parameters
-#'
-paramExtract = function(func,...){
-  params = list(...)
-  if(length(params) == 0){
-    return(NULL)
-  }
-
-  arg.names = formalArgs(func)
-  arg.names = arg.names[arg.names %in% names(params)]
-  return(params[arg.names])
-}
-
-#' @title paramMerge
-#'
-#' @description Merge two sets of parameters
-#' @details Merge two sets of parameters
-#'
-#' @inheritParams paramExtract
-#' @param neceParam A list of user input parameters
-paramMerge = function(func,neceParam,...){
-  dotParam = paramExtract(func,...)
-  if(length(dotParam) > 0 & length(neceParam) > 0){
-    dotParam = dotParam[!names(dotParam) %in% names(neceParam)]
-  }
-  Param = c(neceParam,dotParam)
-}
 
 #' @title createAnnotation
 #'
@@ -206,7 +144,11 @@ bamGeneCoverage = function(bam,gene_range_bed,outdir,bedtools = "bedtools"){
   system(command1)
   system(command2)
 
-  noncover = read.table(file.path(outdir,"noncover.bed"))
+  filename = file.path(outdir,"noncover.bed")
+  if(file.size(filename) == 0L){
+    return(NULL)
+  }
+  noncover = read.table(filename)
   colnames(noncover) = c("chr","start","end","strand","gene")
   return(noncover)
 }
@@ -356,7 +298,9 @@ reads_extract_bc = function(fastq_path,barcode_path,
                                  gene_range_bed = file.path(work_dir,"annotation/gene_range.txt"),
                                  outdir = file.path(work_dir,"annotation"),
                                  bedtools = bedtools)
-    gene_bed = gene_bed %>% filter(!gene %in% noncover$gene)
+    if(!is.null(noncover)){
+      gene_bed = gene_bed %>% filter(!gene %in% noncover$gene)
+    }
 
     start_time <- Sys.time()
     mem = peakRAM::peakRAM({

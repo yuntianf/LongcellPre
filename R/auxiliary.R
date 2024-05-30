@@ -1,3 +1,49 @@
+#' @title saveResult
+#'
+#' @description Save the result into a file
+#' @details Write the dataframe result in a txt table file
+#'
+#' @param data A dataframe
+#' @param filename The output filename
+saveResult = function(data,filename){
+  write.table(data,file  = filename,sep = "\t",quote = FALSE,row.names = FALSE)
+}
+
+
+#' @title paramExtract
+#'
+#' @description Extract parameters from the ... for a function
+#' @details Extract parameters from the ... for a function
+#'
+#' @param func functions to be match with parameters
+#' @param ... Omitted parameters
+#'
+paramExtract = function(func,...){
+  params = list(...)
+  if(length(params) == 0){
+    return(NULL)
+  }
+  
+  arg.names = formalArgs(func)
+  arg.names = arg.names[arg.names %in% names(params)]
+  return(params[arg.names])
+}
+
+#' @title paramMerge
+#'
+#' @description Merge two sets of parameters
+#' @details Merge two sets of parameters
+#'
+#' @inheritParams paramExtract
+#' @param neceParam A list of user input parameters
+paramMerge = function(func,neceParam,...){
+  dotParam = paramExtract(func,...)
+  if(length(dotParam) > 0 & length(neceParam) > 0){
+    dotParam = dotParam[!names(dotParam) %in% names(neceParam)]
+  }
+  Param = c(neceParam,dotParam)
+}
+
 long2wide = function (long, row_names_from, col_names_from, values_from, 
           symmetric = TRUE) 
 {
@@ -65,9 +111,9 @@ save10X = function(long,path,i = "gene",j = "cell",value = "count"){
     x = long[,value]
   )
   
-  write.table(x, file = file.path(path,"barcodes.tsv"), sep = "\t", 
+  write.table(x, file = file.path(path,"features.tsv"), sep = "\t", 
               quote = FALSE, row.names = FALSE, col.names = FALSE)
-  write.table(y, file = file.path(path,"features.tsv"), sep = "\t", 
+  write.table(y, file = file.path(path,"barcodes.tsv"), sep = "\t", 
               quote = FALSE, row.names = FALSE, col.names = FALSE)
   writeMM(sparse_mat, file = file.path(path,"matrix.mtx"))
 }
