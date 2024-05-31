@@ -438,6 +438,7 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
     }
   }
   count = as.data.frame(do.call(rbind,count))
+  count = count %>% dplyr::select(cell,gene,isoform,count,polyA)
   saveResult(count,file.path(dir,"iso_count.txt"))
   return(0)
 }
