@@ -44,6 +44,15 @@ paramMerge = function(func,neceParam,...){
   Param = c(neceParam,dotParam)
 }
 
+#' @title long2wide
+#'
+#' @description transform a long table into a wide matrix
+#'
+#' @param long The input long table
+#' @param row_names_from The name of the column which would be transformed to each row index
+#' @param col_names_from The name of the column which would be transformed to each col index
+#' @param values_from The name of the column which would be set as values in the matrix
+#' @param symmetric The flag to indicate if the transformed matrix is symmetric.
 long2wide = function (long, row_names_from, col_names_from, values_from, 
           symmetric = TRUE) 
 {
@@ -64,6 +73,12 @@ long2wide = function (long, row_names_from, col_names_from, values_from,
   return(out)
 }
 
+#' @title long2square
+#'
+#' @description transform a long table into a square matrix
+#' @inheritParams long2wide
+#' @param na.fill The value to fill the NA in the square matrix
+#' @param nodes The pre-defined row and col index
 long2square = function(long, row_names_from, col_names_from, values_from, 
                        symmetric = TRUE,na.fill = 0,nodes = NULL){
   long = long[, c(row_names_from, col_names_from, values_from)]
@@ -96,6 +111,14 @@ long2square = function(long, row_names_from, col_names_from, values_from,
   return(mat)
 }
 
+#' @title save10X
+#'
+#' @description save a long table into cellRanger outpur format
+#' @param long The input long table
+#' @param path The output path
+#' @param i The name of the column which stores the features
+#' @param j The name of the column which stores the cells
+#' @param value The name of the column which stores the feature count
 save10X = function(long,path,i = "gene",j = "cell",value = "count"){
   long = long[,c(i,j,value)]
   
@@ -118,6 +141,17 @@ save10X = function(long,path,i = "gene",j = "cell",value = "count"){
   writeMM(sparse_mat, file = file.path(path,"matrix.mtx"))
 }
 
+#' @title saveIsoMat
+#'
+#' @description save the output from "cells_genes_isos_count" into 
+#' cellRanger outpur format, for both gene quantification matrix and isoform quantification
+#' matrix.
+#' @param iso The output from "cells_genes_isos_count", which is a dataframe with four columns
+#' @param path The output path
+#' @param gene_col The name of the column which stores the gene name
+#' @param cell_col The name of the column which stores the cells
+#' @param iso_col The name of the column which stores the isoform name
+#' @param count_col The name of the column which stores the isoform count
 saveIsoMat = function(iso,path, cell_col = "cell",gene_col = "gene",
                       iso_col = "isoform",count_col= "count"){
   dir.create(file.path(path,"gene"),showWarnings = FALSE)

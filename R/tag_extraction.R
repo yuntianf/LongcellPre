@@ -23,6 +23,19 @@ seq_config = function(protocol,toolkit,
     barcode_len = 16
     UMI_len = 10
   }
+  if(protocol == "VISIUM"){
+    if(toolkit == 5){
+      adapter = "TTTCTTATATGGG"
+    }
+    else{
+      adapter = "GCGTCGTGTAG"
+    }
+    left_flank = 55
+    right_flank = -10
+    drop_adapter =FALSE
+    barcode_len = 16
+    UMI_len = 12
+  }
   else if(protocol == "Curio"){
     adapter = "TCTCGGGAACGCTGAAGA"
     left_flank = 25
