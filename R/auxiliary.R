@@ -95,14 +95,14 @@ long2square = function(long, row_names_from, col_names_from, values_from,
                                          names_from = col_names_from,
                                          values_from = values_from))
   rownames(mat) = mat[, row_names_from]
-  mat = mat[,-which(colnames(mat)==row_names_from)]
+  mat = mat[,-which(colnames(mat)==row_names_from),drop = FALSE]
   #return(mat)
   diff = setdiff(nodes,colnames(mat))
   if(length(diff) > 0){
     mat[,diff] = NA
   }
   
-  mat = mat[nodes,nodes]
+  mat = mat[nodes,nodes,drop = FALSE]
   rownames(mat) = colnames(mat) = nodes
   
   mat[is.na(mat)] = na.fill

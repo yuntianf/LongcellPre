@@ -77,8 +77,16 @@ mid_group = function(mid,sep = ","){
   mat = do.call(rbind,mat)
   suppressWarnings(storage.mode(mat) <- "numeric")
 
+
   mid = mid[order(rowSums(is.na(mat)),decreasing = TRUE)]
-  mat = mat[order(rowSums(is.na(mat)),decreasing = TRUE),]
+  mat = mat[order(rowSums(is.na(mat)),decreasing = TRUE),,drop = FALSE]
+
+
+  if(nrow(mat) == 1){
+    result = as.data.frame(cbind(mid,mid))
+    colnames(result) = c("c","p")
+    return(result)
+  }
 
   is_subset = function(child, parent){
     if(length(child) != length(parent)){
@@ -107,6 +115,11 @@ mid_group = function(mid,sep = ","){
   })
   result = as.data.frame(do.call(rbind,result))
   colnames(result) = c("c","p")
+  orphan = setdiff(1:length(mid),result$c)
+  orphan = as.data.frame(cbind(orphan,orphan))
+  colnames(orphan) = c("c","p")
+  result = rbind(result,orphan)
+
   result = result %>% mutate(c = mid[c],p = mid[p])
   return(result)
 }
@@ -159,8 +172,8 @@ mid_count = function (mid, total, parent, len) {
                                          parent %>% filter(p %in% count_mat$mid),
                                          by = c("mid" = "c")))
   #return(count_mat)
-  if(sum(is.na(count_mat$p)) == 1){
-    mode_mid = count_mat$mid[is.na(count_mat$p)]
+  if(sum(count_mat$p == count_mat$mid) == 1){
+    mode_mid = count_mat$mid[count_mat$p == count_mat$mid]
     mid_coexist = cbind(mode_mid, mode_mid, sum(count_mat$count))
   }
   else{
@@ -234,109 +247,6 @@ site_correct = function(from,to,sep = ","){
 #' @importFrom dplyr select
 #' @importFrom tidyr pivot_wider
 #' @return A string vector indicating preserved patterns of middle splicing sites
-cells_mid_filter <- function(cells,cluster,isoform_mid){
-  if(length(isoform_mid) != length(cells)){
-    stop("The size of isoforms and cells don't match!")
-  }
-  if(length(cluster) != length(cells)){
-    stop("The size of clusters and cells don't match!")
-  }
-
-  temp = as.data.frame(cbind(cells,cluster,isoform_mid))
-  colnames(temp) = c("cell","cluster","mid")
-
-  total = sort(table(isoform_mid),decreasing = TRUE)
-  total = names(total)
-
-  if(length(total) == 1){
-    isoform_corres = as.data.frame(cbind(total,total))
-    colnames(isoform_corres) = c("from","to")
-    rownames(isoform_corres) = isoform_corres$from
-    return(isoform_corres)
-  }
-
-  len = mid_len(total)
-  parent = mid_group(total)
-
-  temp = temp %>% group_by(cell,cluster) %>%
-    reframe(coexist = mid_count(mid,total,parent,len))
-  coexist = as.data.frame(temp$coexist)
-  colnames(coexist) = c("from","to","count")
-  coexist$count = as.numeric(coexist$count)
-  coexist = coexist %>% group_by(from,to) %>% summarise(count = sum(count),.groups = "drop")
-
-  mid_uniq = unique(c(coexist$from,coexist$to))
-  coexist_matrix = as.data.frame(tidyr::pivot_wider(coexist,names_from = "to",values_from = "count"))
-  rownames(coexist_matrix) = coexist_matrix$from
-  coexist_matrix = coexist_matrix %>% dplyr::select(-from)
-  coexist_matrix[,setdiff(mid_uniq,colnames(coexist_matrix))] = NA
-  coexist_matrix = coexist_matrix[mid_uniq,mid_uniq]
-  coexist_matrix[is.na(coexist_matrix)] = 0
-  coexist_matrix = as.matrix(coexist_matrix)
-  #return(coexist_matrix)
-
-  isoform_coexist_filter <- cbind(diag(coexist_matrix),
-                                  rowSums(coexist_matrix)-diag(coexist_matrix))
-  isoform_coexist_filter <- isoform_coexist_filter[order(isoform_coexist_filter[,1],
-                                                         decreasing = T),]
-  isoform_coexist_filter <- names(which(isoform_coexist_filter[,1] > 2*isoform_coexist_filter[,2]))
-
-  isoform_corres = as.data.frame(coexist_matrix[,isoform_coexist_filter])
-  isoform_corres = sapply(1:nrow(isoform_corres),function(i){
-    x = unlist(isoform_corres[i,])
-    if(sum(x) == 0){
-      return(NA)
-    }
-    return(isoform_coexist_filter[which(x == max(x))[1]])
-  })
-
-  isoform_corres = as.data.frame(cbind(rownames(coexist_matrix),isoform_corres))
-  colnames(isoform_corres) = c("from","to")
-  rownames(isoform_corres) = isoform_corres$from
-  #return(isoform_corres)
-
-  disagree = isoform_corres %>% filter(from != to,!is.na(to))
-  if(nrow(disagree) == 0){
-    return(isoform_corres)
-  }
-  ds = disagree_sites(disagree$from,disagree$to)
-  id = which(ds$wrong > ds$correct & ds$disagree*3 > ds$wrong)
-
-  if(length(id) == 0){
-    return(isoform_corres)
-  }
-
-  correct_iso = na.omit(unique(isoform_corres$to))
-  to_table = do.call(rbind,strsplit(correct_iso,split = ","))
-  to_table <- suppressWarnings(matrix(as.numeric(to_table),ncol = ncol(to_table)))
-  to_table[is.na(to_table)] = 0
-  if(length(id) == 1){
-    correct_iso = correct_iso[to_table[,id] == 0]
-  }
-  else if(nrow(to_table) == 1){
-    correct_iso = correct_iso[sum(to_table[,id]) == 0]
-  }
-  else{
-    correct_iso = correct_iso[rowSums(to_table[,id]) == 0]
-  }
-
-  isoform_corres_new = as.data.frame(coexist_matrix[,correct_iso])
-  isoform_corres_new = sapply(1:nrow(isoform_corres_new),function(i){
-    x = unlist(isoform_corres_new[i,])
-    if(sum(x) == 0){
-      return(NA)
-    }
-    return(correct_iso[which(x == max(x))[1]])
-  })
-
-  isoform_corres_new = as.data.frame(cbind(rownames(coexist_matrix),isoform_corres_new))
-  colnames(isoform_corres_new) = c("from","to")
-  #print(nrow(isoform_corres_new))
-  #isoform_corres_new$to = site_correct(isoform_corres_new$from,isoform_corres_new$to)
-
-  rownames(isoform_corres_new) = isoform_corres_new$from
-  return(isoform_corres_new)
-}
 
 mid_correct_input = function(cells,cluster,gene_isoform){
   if(nrow(gene_isoform) != length(cells)){
@@ -367,8 +277,8 @@ mid_coexist = function(data){
   coexist$count = as.numeric(coexist$count)
   concensus = as.data.frame(cbind(data[,c("cell","cluster")],
                                   coexist[,"to",drop = FALSE])) %>%
-    group_by(cell,cluster) %>%
-    summarise(concensus = unique(to),.groups = "drop")
+                                  group_by(cell,cluster) %>%
+                                  summarise(concensus = unique(to),.groups = "drop")
 
   coexist = coexist %>% group_by(from,to) %>%
     summarise(count = sum(count),.groups = "drop")
@@ -523,12 +433,14 @@ cells_mid_correct <- function(cells,cluster,gene_isoform,polyA){
   coexist = out[[2]]
 
   if(nrow(coexist) == 1){
-    isoform_corres = as.data.frame(coexist %>% dplyr::select(-count))
-    rownames(isoform_corres) = isoform_corres$from
+    corres = as.data.frame(coexist %>% dplyr::select(-count))
+    rownames(corres) = corres$from
   }
   # return(coexist)
-  coexist_matrix = long2square(coexist,"from","to","count",symmetric = FALSE)
-  corres = isoform_corres(coexist_matrix)
+  else{
+    coexist_matrix = long2square(coexist,"from","to","count",symmetric = FALSE)
+    corres = isoform_corres(coexist_matrix)
+  }
 
   data = left_join(data,concensus,by = c("cell","cluster"))
   data$polyA = polyA
