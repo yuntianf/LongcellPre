@@ -81,8 +81,8 @@ annotation = function(gtf_path = NULL,gene_bed_path = NULL,work_dir = "./",overw
       else{
         gtf = NULL
       }
+      return(list(gene_bed,gtf))
     }
-    return(list(gene_bed,gtf))
   }
   out = createAnnotation(gtf_path = gtf_path,gene_bed_path = gene_bed_path,work_dir = work_dir,
                          bed_chr_col = bed_chr_col,bed_start_col = bed_start_col,bed_end_col = bed_end_col,

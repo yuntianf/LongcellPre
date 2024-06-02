@@ -241,25 +241,30 @@ cells_mid_filter <- function(cells,cluster,isoform_mid){
   if(length(cluster) != length(cells)){
     stop("The size of clusters and cells don't match!")
   }
-  total = sort(table(isoform_mid),decreasing = TRUE)
-  total = names(total)
-
-  len = mid_len(total)
-  parent = mid_group(total)
 
   temp = as.data.frame(cbind(cells,cluster,isoform_mid))
   colnames(temp) = c("cell","cluster","mid")
 
-  temp = temp %>% group_by(cell,cluster) %>% reframe(coexist = mid_count(mid,total,parent,len))
+  total = sort(table(isoform_mid),decreasing = TRUE)
+  total = names(total)
+
+  if(length(total) == 1){
+    isoform_corres = as.data.frame(cbind(total,total))
+    colnames(isoform_corres) = c("from","to")
+    rownames(isoform_corres) = isoform_corres$from
+    return(isoform_corres)
+  }
+
+  len = mid_len(total)
+  parent = mid_group(total)
+
+  temp = temp %>% group_by(cell,cluster) %>%
+    reframe(coexist = mid_count(mid,total,parent,len))
   coexist = as.data.frame(temp$coexist)
   colnames(coexist) = c("from","to","count")
   coexist$count = as.numeric(coexist$count)
   coexist = coexist %>% group_by(from,to) %>% summarise(count = sum(count),.groups = "drop")
-  if(nrow(coexist) == 1){
-    isoform_corres = as.data.frame(coexist %>% dplyr::select(-count))
-    rownames(isoform_corres) = isoform_corres$from
-    return(isoform_corres)
-  }
+
   mid_uniq = unique(c(coexist$from,coexist$to))
   coexist_matrix = as.data.frame(tidyr::pivot_wider(coexist,names_from = "to",values_from = "count"))
   rownames(coexist_matrix) = coexist_matrix$from
