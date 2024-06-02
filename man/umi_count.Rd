@@ -12,7 +12,7 @@ umi_count(
   gene = "gene",
   isoform = "isoform",
   polyA = "polyA",
-  sim_thresh = 7,
+  sim_thresh = NULL,
   split = "|",
   sep = ",",
   splice_site_thresh = 10,

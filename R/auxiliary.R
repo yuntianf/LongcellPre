@@ -119,6 +119,7 @@ long2square = function(long, row_names_from, col_names_from, values_from,
 #' @param i The name of the column which stores the features
 #' @param j The name of the column which stores the cells
 #' @param value The name of the column which stores the feature count
+#' @importFrom Matrix writeMM
 save10X = function(long,path,i = "gene",j = "cell",value = "count"){
   long = long[,c(i,j,value)]
   

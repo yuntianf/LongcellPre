@@ -144,22 +144,6 @@ mid_group = function(mid,sep = ","){
 #' @param len The number of covered splicing sites for each read output from mid_len.
 #' @return A dataframe, the first column is the original middle splicing sites, the second column is the chosen
 #' representative within this UMI cluster, the third column stores the count of the original.
-# mid_count = function(mid,total){
-#   count = table(mid)
-#   name = names(count)
-#   #count = count*log(sum(count),2)
-
-#   if(length(name) == 1){
-#     mid_coexist = cbind(name,name,count)
-#   }
-#   else{
-#     mode_mid = name[which(count == max(count))]
-#     mode_mid = total[total %in% mode_mid][1]
-#     mid_coexist = cbind(name,mode_mid,count)
-#   }
-#   rownames(mid_coexist) = NULL
-#   return(mid_coexist)
-# }
 mid_count = function (mid, total, parent, len) {
   count_list = table(mid)
   count_mat = as.data.frame(count_list)
@@ -195,7 +179,15 @@ mid_count = function (mid, total, parent, len) {
   return(mid_coexist)
 }
 
-
+#' @title disagree_sites
+#'
+#' @description Identify the different sites between different isoforms within the same
+#' UMI cluster
+#'
+#' @param from,to A string vector of middle splicing sites. From is the original middle splicing
+#' sites, to is the middle splicing sites the from mapped to within the same UMI cluster
+#' @return A dataframe, recording the number of splicing sites existing in the correctly mapped
+#' and wrongly mapped reads.
 disagree_sites = function(from,to){
   if(length(from) != length(to)){
     stop("There should be a one to one correspondence!")
@@ -216,6 +208,13 @@ disagree_sites = function(from,to){
   return(filter)
 }
 
+#' @title site_correct
+#'
+#' @description correct wrongly mapped splicing sites.
+#'
+#' @inheritParams disagree_sites
+#' @param sep The character to seperate splicing sites in the middle splicing site string.
+#' @return A datafrom recording the mapping between wrongly mapped isoform and correct isoform.
 site_correct = function(from,to,sep = ","){
   if(length(from) != length(to)){
     stop("The length of from and to should match!")
