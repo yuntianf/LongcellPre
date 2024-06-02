@@ -30,7 +30,7 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
     gene_isoform = gene_isoform[,c(TRUE,filter,TRUE)]
   }
 
-  #return(list(gene_cells_cluster,gene_isoform))
+  # return(list(gene_cells_cluster,gene_isoform))
   gene_isoform = cells_isoform_correct(gene_cells_cluster$cell,
                                        gene_cells_cluster$cluster,
                                        gene_isoform,

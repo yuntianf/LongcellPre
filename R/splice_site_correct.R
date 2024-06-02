@@ -115,12 +115,14 @@ mid_group = function(mid,sep = ","){
   })
   result = as.data.frame(do.call(rbind,result))
   colnames(result) = c("c","p")
-  orphan = setdiff(1:length(mid),result$c)
-  orphan = as.data.frame(cbind(orphan,orphan))
-  colnames(orphan) = c("c","p")
-  result = rbind(result,orphan)
-
   result = result %>% mutate(c = mid[c],p = mid[p])
+  orphan = setdiff(mid,result$c)
+  if(length(orphan) > 0){
+    orphan = as.data.frame(cbind(orphan,NA))
+    colnames(orphan) = c("c","p")
+    result = rbind(result,orphan)
+  }
+
   return(result)
 }
 
@@ -155,6 +157,7 @@ mid_group = function(mid,sep = ","){
 mid_count = function (mid, total, parent, len) {
   count_list = table(mid)
   count_mat = as.data.frame(count_list)
+
   colnames(count_mat) = c("mid","count")
   count_mat = count_mat %>% mutate(mid = as.character(mid))
   if(nrow(count_mat) < 2){
@@ -171,9 +174,9 @@ mid_count = function (mid, total, parent, len) {
   count_mat = suppressWarnings(left_join(count_mat,
                                          parent %>% filter(p %in% count_mat$mid),
                                          by = c("mid" = "c")))
-  #return(count_mat)
-  if(sum(count_mat$p == count_mat$mid) == 1){
-    mode_mid = count_mat$mid[count_mat$p == count_mat$mid]
+
+  if(sum(is.na(count_mat$p)) == 1){
+    mode_mid = count_mat$mid[is.na(count_mat$p)]
     mid_coexist = cbind(mode_mid, mode_mid, sum(count_mat$count))
   }
   else{
