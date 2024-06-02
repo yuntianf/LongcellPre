@@ -114,13 +114,19 @@ mid_group = function(mid,sep = ","){
     sub = do.call(rbind,sub)
   })
   result = as.data.frame(do.call(rbind,result))
-  colnames(result) = c("c","p")
-  result = result %>% mutate(c = mid[c],p = mid[p])
-  orphan = setdiff(mid,result$c)
-  if(length(orphan) > 0){
-    orphan = as.data.frame(cbind(orphan,NA))
-    colnames(orphan) = c("c","p")
-    result = rbind(result,orphan)
+  if(length(result) > 0){
+    colnames(result) = c("c","p")
+    result = result %>% mutate(c = mid[c],p = mid[p])
+    orphan = setdiff(mid,result$c)
+    if(length(orphan) > 0){
+      orphan = as.data.frame(cbind(orphan,NA))
+      colnames(orphan) = c("c","p")
+      result = rbind(result,orphan)
+    }
+  }
+  else{
+    result = as.data.frame(cbind(mid,NA))
+    colnames(result) = c("c","p")
   }
 
   return(result)
@@ -274,7 +280,7 @@ mid_coexist = function(data){
   parent = mid_group(total)
 
   data = data %>% group_by(cell,cluster) %>%
-    reframe(coexist = mid_count(mid,total,parent,len))
+    reframe(coexist = mid_count(mid,total,parent,len),.groups = "drop")
   coexist = as.data.frame(data$coexist)
   colnames(coexist) = c("from","to","count")
   coexist$count = as.numeric(coexist$count)
@@ -459,7 +465,7 @@ cells_nomid_correct <- function(cells,cluster,gene_isoform,polyA){
   data = data %>% group_by(cell,cluster) %>%
     summarise(start = min(start),end = max(end),
               size = n(),
-              polyA = mean(polyA))
+              polyA = mean(polyA),.groups = "drop")
   return(data)
 }
 

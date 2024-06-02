@@ -360,7 +360,7 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
                             # parameter for umi count
                             bar = "barcode",gene = "gene",
                             isoform = "isoform",polyA = "polyA",
-                            sim_thresh = 7, split = "|",sep = ",",
+                            sim_thresh = NULL, split = "|",sep = ",",
                             splice_site_thresh = 10,verbose = FALSE,
                             bed_gene_col = "gene",bed_strand_col = "strand",
                             #parameter for mapping to transcript
