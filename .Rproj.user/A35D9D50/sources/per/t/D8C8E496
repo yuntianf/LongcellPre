@@ -1,0 +1,26 @@
+{
+    "id": "D8C8E496",
+    "path": "C:/yuntian/Necessary/Upenn/Thesis/project/Single-cell-Long-reads/methods/github/LongcellPre/R/splice_site_correct.R",
+    "project_path": "R/splice_site_correct.R",
+    "type": "r_source",
+    "hash": "3778141048",
+    "contents": "",
+    "dirty": false,
+    "created": 1732207418311.0,
+    "source_on_save": false,
+    "relative_order": 12,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "459,66",
+        "scrollLine": "0"
+    },
+    "folds": "13|55|45|0|\n55|34|64|0|\n74|36|132|0|\n146|48|179|0|\n190|35|208|0|\n217|43|238|0|\n273|29|293|0|\n295|42|354|0|\n368|80|405|0|\n482|92|509|0|\n",
+    "lastKnownWriteTime": 1730992998,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1732287611549,
+    "read_only": false,
+    "read_only_alternatives": []
+}

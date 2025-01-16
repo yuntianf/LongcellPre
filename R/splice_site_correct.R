@@ -480,7 +480,7 @@ cells_nomid_correct <- function(cells,cluster,gene_isoform,polyA){
 #' @param sep The character to seperate the start and end for each exon bin in the isoform representation
 #' @param split The character to seperate each exon bin in the isoform representation
 #' @return A string representing isoform
-site_recover <- function(start,end,mid = NULL,sites = NULL,sep = ",",split = "|"){
+site_recover <- function(start,end,mid = NULL,sites = NULL,flank = 5,sep = ",",split = "|"){
     if(is.null(sites)){
         splice_sites = paste(start,end,sep = sep)
     }
@@ -492,10 +492,10 @@ site_recover <- function(start,end,mid = NULL,sites = NULL,sep = ",",split = "|"
       }
       mid_sites = sites[mid]
       if(as.numeric(start) == -1){
-        start = as.numeric(mid_sites[1])-1
+        start = as.numeric(mid_sites[1])-flank
       }
       if(as.numeric(end) == -1){
-        end = as.numeric(mid_sites[length(mid_sites)])+1
+        end = as.numeric(mid_sites[length(mid_sites)])+flank
       }
       if(is.na(start)){
         return(NA)

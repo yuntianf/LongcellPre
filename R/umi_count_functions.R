@@ -10,18 +10,17 @@
 #' @param splice_site_thresh The minimum threshold of occurance  for an splice site to be preserved
 
 isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
-                            split = "|",sep = ",",
-                            splice_site_thresh = 10){
+                            split = "|",sep = ","){
 
   gene_isoform = splice_site_table(gene_cells_cluster$isoform,
                                    gene_cells_cluster$polyA,
                                    strand,
-                                   split,sep,splice_site_thresh)
+                                   split,sep,splice_site_thresh=0)
   #return(gene_isoform)
   if(length(gene_isoform) == 0 || nrow(gene_isoform) == 0){
     return(NULL)
   }
-  gene_cells_cluster = gene_cells_cluster[gene_isoform$id,]
+
   gene_isoform = gene_isoform %>% dplyr::select(-id)
 
   if(ncol(gene_isoform) > 2){
@@ -35,7 +34,7 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
                                        gene_cells_cluster$cluster,
                                        gene_isoform,
                                        gene_cells_cluster$polyA)
-  #return(gene_isoform)
+  # return(gene_isoform)
   if(nrow(gene_isoform) == 0){
     return(gene_isoform)
   }
@@ -72,6 +71,16 @@ gene_umi_count <- function(cell_exon,qual,strand,bar = "barcode",
     colnames(cell_exon)[which(colnames(cell_exon) == polyA)] = "polyA"
     cell_exon$polyA = as.numeric(cell_exon$polyA)
 
+    gene_isoform = splice_site_table(cell_exon$isoform,
+                                     cell_exon$polyA,
+                                     strand,
+                                     split,sep,splice_site_thresh)
+    #return(gene_isoform)
+    if(length(gene_isoform) == 0 || nrow(gene_isoform) == 0){
+      return(NULL)
+    }
+    cell_exon = cell_exon[gene_isoform$id,]
+
     cells = unique(cell_exon[,"cell"])
     if(is.null(sim_thresh)){
       sim_thresh = nchar(cell_exon$umi)[1]/2+1
@@ -106,8 +115,7 @@ gene_umi_count <- function(cell_exon,qual,strand,bar = "barcode",
     filter_ratio = mean(c(sum(qual[qual$needle < sim_thresh,"count"]),
                           sum(qual[qual$needle < sim_thresh+1,"count"])))/sum(qual$count)
     gene_isoform = isoform_correct_filter(gene_cells_cluster,filter_ratio,strand,
-                                   split = split,sep = sep,
-                                   splice_site_thresh = splice_site_thresh)
+                                   split = split,sep = sep)
 
 
     return(gene_isoform)

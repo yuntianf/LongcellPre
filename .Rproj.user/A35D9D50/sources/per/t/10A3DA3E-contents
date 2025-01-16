@@ -1,0 +1,144 @@
+#' @title extractReadSeq
+#' @description extract the sequence from the parent sequence given the coordinates.
+#' @param seq The string of the parent sequence
+#' @param start,end The start and the end position of the parent sequence in the genome
+#' @param exon_bins A matrix with two columns, each row is a bin and each element represents the start and end position of the bin.
+#' @return A string of the extracted sequence.
+extractReadSeq = function(seq,start,end,exon_bins){
+  coord = exon_bins-start+1
+
+  if(sum(coord > end) > 0){
+    stop("The parent read is not long enough to be exatracted given the coordinates.")
+  }
+  read = sapply(1:nrow(coord),function(i){
+    start = coord[i,1]
+    end = coord[i,2]
+
+    exon = seq[start:end]
+    return(exon)
+  })
+  read = do.call(xscat,read)
+  return(read)
+}
+
+
+#' @title extractSeq
+#' @description extract the sequence from the genome given the splicing sites.
+#' @param genome The name of the genome, will be used to retrieve the genome object from BSgenome.
+#' @param chr The chromosome index of the sequence to be extracted.
+#' @param isoforms A string vector to indicate the isoforms.
+#' @param strand The strand of the sequence to be extracted.
+#' @param split The character to seperate the exons in the isoform string.
+#' @param sep The character to seperate the start and end position of an exon in the isoform string.
+#' @import BSgenome
+#' @importFrom Biostrings DNAStringSet
+#' @importFrom Biostrings reverseComplement
+#' @return A string of the extracted sequence.
+extractSeq = function(genome,chr,isoforms,strand,split = "|",sep = ","){
+  exons_list = lapply(isoforms,function(x){
+    bins = read2bins(x,split,sep)
+  })
+
+  sides = do.call(rbind,exons_list)
+  start = min(sides[,1])
+  end = max(sides[,2])
+
+  whole_seq = BSgenome::getSeq(genome,chr,start = start,end = end,strand = "+")
+
+  reads = lapply(exons_list,function(x){
+    read = extractReadSeq(whole_seq,start,end,x)
+    return(read)
+  })
+
+  reads = DNAStringSet(unlist(reads))
+  if(strand == "-"){
+    reads = reverseComplement(reads)
+  }
+  return(reads)
+}
+
+#' @title isoformCount2ReadsForGene
+#' @description Transform the isoform quantification into corresponding read sequences.
+#' @param mat The dataframe which records the isoform quantification, should have at least two columns, including
+#' the isoform and the count of the isoform, there can also be other columns about the meta data, which would be saved
+#' in the read name.
+#' @param genome The name of the genome, will be used to retrieve the genome object from BSgenome.
+#' @param chr The chromosome index of the sequence to be extracted.
+#' @param isoforms A string vector to indicate the isoforms.
+#' @param strand The strand of the sequence to be extracted.
+#' @param split The character to seperate the exons in the isoform string.
+#' @param sep The character to seperate the start and end position of an exon in the isoform string.
+#' @import BSgenome
+#' @importFrom Biostrings DNAStringSet
+#' @importFrom Biostrings reverseComplement
+#' @return A string of the extracted sequence.
+isoformCount2ReadsForGene = function(mat,genome,chr,strand,
+                                     isoform_col = "isoform",count_col = "count",name_col = c("cell","gene","polyA"),
+                                     quality = "~",...){
+  mat = as.data.frame(mat) %>% # mutate_at(count_col,~ifelse(. > 1, ., rbinom(nrow(mat), size = 1, prob = .))) %>%
+    filter_at(count_col,~. > 0)
+
+  qname = as.data.frame(mat[,name_col,drop = FALSE])
+  qname = qname %>% mutate(across(everything(), ~ paste0(cur_column(), "=", .)))
+  qname = do.call(paste, c(qname,sep = "|"))
+
+  seq = extractSeq(genome,chr,unlist(mat[,isoform_col]),strand,...)
+
+  seq_len = seq@ranges@width
+  qual = paste(rep(quality,50000),collapse = "")
+  read_qual = sapply(seq_len,function(x){
+    return(substr(qual,1,x))
+  })
+
+
+  count = unlist(round(mat[,count_col]))
+
+  qname = rep(qname,count)
+  qname = paste(qname,1:length(qname),sep = "_")
+
+  seq = rep(seq,count)
+
+  read_qual = rep(read_qual,count)
+
+  qname = BStringSet(qname)
+  read_qual = BStringSet(read_qual)
+  fastq = ShortReadQ(sread = seq, quality = read_qual, id = qname)
+
+  return(fastq)
+}
+
+isoformCount2Read = function(mat,genome,gene_bed,filename,
+                        gene_col = "gene",
+                        chr_col = "chr",strand_col = "strand",
+                        isoform_col = "isoform",count_col = "count",
+                        name_col = c("cell","gene","polyA"),
+                        quality = "~",...){
+  gene_uniq = unique(unlist(mat[,gene_col]))
+
+  reads = lapply(gene_uniq,function(x){
+    print(x)
+    sub_mat = mat %>% filter_at(gene_col,~. == x)
+
+    sub_bed = gene_bed %>% filter_at(gene_col,~. ==x)
+
+    chr = unique(unlist(sub_bed[,chr_col]))
+    strand = unique(unlist(sub_bed[,strand_col]))
+
+    gene_reads = isoformCount2ReadsForGene(sub_mat,genome,chr,strand,
+                                           isoform_col = isoform_col,count_col = count_col,
+                                           name_col = name_col,
+                                           quality = quality,...)
+
+    return(gene_reads)
+  })
+
+  reads = Reduce("append",reads)
+  writeFastq(reads, filename, compress = TRUE)
+  return(reads)
+}
+
+extractAnnotFromQname = function(qname,annot = "cell"){
+  regrex = paste(c("(?<=",annot,"=)[^|]+"),collapse = "")
+  out = str_extract(qname, "(?<=cell=)[^|]+")
+  return(out)
+}

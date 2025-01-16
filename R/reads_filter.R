@@ -93,6 +93,27 @@ size_filter_error <- function(size,ratio = 0.1){
     return(size$weight)
 }
 
+
+#' #' @title isoform_size_filter
+#' #'
+#' #' @description Filter out singletons and small clusters which are not likely to be
+#' #' correctly clustered, given the distribution of cluster size.
+#' #' @param size A vector to store the size for each cluster.
+#' #' @param ratio The estimated frequency for UMIs which are enriched of sequencing errors and
+#' #' couldn't be clustered correctly and become singletons
+#' #' @return A numeric vector to indicating whether the cluster is filtered out or not
+#' isoform_size_filter <- function(isoforms,size,ratio = 0.1){
+#'   cluster = isoform_dis_cluster(isoforms,thresh = 10,eps = 10)
+#'
+#'   isoform_size = as.data.frame(cbind(cluster,size))
+#'   colnames(isoform_size) = c("cluster","size")
+#'
+#'   isoform_size = isoform_size %>% group_by(cluster) %>%
+#'     mutate(weight = size_filter_error(size,ratio))
+#'   return(isoform_size$weight)
+#' }
+
+
 #' @title isoform_size_filter
 #'
 #' @description Filter out singletons and small clusters which are not likely to be
@@ -101,15 +122,36 @@ size_filter_error <- function(size,ratio = 0.1){
 #' from the same UMI
 #' @inheritParams isoform_dis_cluster
 #' @return A numeric vector to indicating whether the cluster is filtered out or not
-isoform_size_filter <- function(isoforms,size,ratio = 0.1){
+isoform_size_filter <- function(isoforms,size,ratio = 0.1,...){
+  if(length(isoforms) == 1){
+
+  }
+  len = isos_len(isoforms,...)
   cluster = isoform_dis_cluster(isoforms,thresh = 10,eps = 10)
 
-  isoform_size = as.data.frame(cbind(cluster,size))
-  colnames(isoform_size) = c("cluster","size")
+  isoform_size = as.data.frame(cbind(cluster,size,len))
+  colnames(isoform_size) = c("cluster","size","len")
 
-  isoform_size = isoform_size %>% group_by(cluster) %>%
-                 mutate(weight = size_filter_error(size,ratio))
-  return(isoform_size$weight)
+  cluster_weight = isoform_size %>% group_by(cluster) %>%
+                 mutate(weight = size_filter_error(size,ratio)) %>%
+                 group_by(cluster) %>% summarise(weight = sum(weight),.groups = "drop")
+
+  result <- isoform_size %>%
+    mutate(id = 1:nrow(isoform_size)) %>%
+    inner_join(cluster_weight, by = "cluster") %>%
+    group_by(cluster) %>%
+    arrange(-size,-len) %>%
+    mutate(rank = row_number())%>%
+    mutate(count = ifelse(rank <= weight,1,0)) %>%
+    ungroup() %>% arrange(id)
+
+    # arrange(desc(len), .by_group = TRUE) %>%
+    # mutate(rank = row_number()) %>%
+    # filter(rank <= weight) %>% # Keep only top n_longest per cluster
+    # dplyr::select(-rank,-n_longest) %>%             # Drop the helper column
+    # ungroup()
+
+  return(result$count)
 }
 
 #' @title cells_isoforms_size_filter

@@ -1,5 +1,13 @@
 #' @include spliceOb.R
 
+
+#' @title isoform2sites
+#' @description  split the isoform string to a vector of splicing sites
+#' @details split the isoform string to a vector of splicing sites
+#' @param isoform A string representing the isoform
+#' @param split The chracter to split each exon within the isoform
+#' @param sep The chracter to split each the start and end sites of an exon
+#' @return A string vector, each element is a splicing site
 isoform2sites = function(isoform,split = "|",sep = ","){
   split = paste(c("\\",split,"|","\\",sep),collapse = "")
   sites = unlist(strsplit(isoform,split = split))
@@ -7,6 +15,20 @@ isoform2sites = function(isoform,split = "|",sep = ","){
   return(sites)
 }
 
+#' @title sites2vec
+#' @description  convert the splicing sites vector to a binary vector
+#' @details convert the splicing sites vector to a binary vector, the spliced-in sites will be set as 1,
+#' the spliced-out sites will be set as 0, the depleted sites which may be due to technical truncations
+#' are set as NA.
+#' @param start A number recording the start position for a read
+#' @param in_site A string vector recording the start position for each exon for a read
+#' @param out_site A string vector recording the end position for each exon for a read
+#' @param end A number recording the end position for a read
+#' @param polyA A bool variable to indicate if the read has a polyA
+#' @param end A number recording the end position for a read
+#' @param sites_index A string vector recording all sites across all reads in this gene
+#' @param strand The strand of this gene
+#' @return A binary vector indicating the splicing sites existence for a read
 sites2vec = function(start,in_site,out_site,end,polyA,sites_index,strand){
   if(length(in_site) != length(out_site)){
     stop("The length of in and out splicing sites should match!")
@@ -39,6 +61,19 @@ sites2vec = function(start,in_site,out_site,end,polyA,sites_index,strand){
   return(sites_index$status)
 }
 
+
+#' @title sites2matrix
+#' @description  convert the splicing sites vector for all reads to a binary matrix
+#' @details This function applies sites2vec to all reads and concat all vector results to a matrix
+#' @param data A dataframe recording the splicing sites for a read, including start, middle splicing sites, end
+#' and polyA
+#' @param in_sites_index A string vector recording unique start position for all middle exons
+#' @param out_sites_index A string vector recording unique end position for all middle exons
+#' @param strand The strand of this gene
+#' @importFrom dplyr mutate
+#' @importFrom dplyr arrange
+#' @importFrom magrittr %>%
+#' @return A binary matrix indicating the splicing sites existence for all reads from a gene
 sites2matrix = function(data,in_sites_index,out_sites_index,strand){
   sites_index = as.data.frame(rbind(cbind(in_sites_index,"in"),cbind(out_sites_index,"out")))
   colnames(sites_index) = c("sites","state")
@@ -57,12 +92,13 @@ sites2matrix = function(data,in_sites_index,out_sites_index,strand){
   return(out)
 }
 
-#' @title judge if two exons can be merged
-#' @description  judge if two exons can be merged
+#' @title sites_coef
+#' @description  judge if two sites can be merged
 #' @details If two exons are co-existing or mutually exclusive, they have the same information,
 #' and can considered as one exon in downstream analysis
 #' @param a A numerical vector for the existence of an exon in each isoform
 #' @param b A numerical vector for the existence of an exon in each isoform
+#' @param count The read count
 #' @importFrom stats na.omit
 #' @return TRUE or FALSE, indicating if the two exons should be merged
 sites_coef <- function(a,b,count){
@@ -89,14 +125,15 @@ sites_coef <- function(a,b,count){
   return(coef)
 }
 
-#' @title judge if exons can be merged
-#' @description  judge if each exon in the gene can be merged with other
+#' @title sites_coef_matrix
+#' @description  judge if each site in the gene can be merged with other
 #' @details Iteratively check if each pair of exons in the gene co-existing or
 #' mutually exclusive
-#' @param exon_table The exon count table output from exonTable()
+#' @param sites_table The site count table output from sites2matrix()
 #' @return A square matrix of logical values, indicating if each two exons should be merged
 #' @importFrom tidyr pivot_wider
 #' @importFrom dplyr select
+#' @importFrom magrittr %>%
 sites_coef_matrix <- function(sites_table,count){
   if(nrow(sites_table) != length(count)){
     stop("The size of reads and their count should match!")
@@ -132,13 +169,17 @@ sites_coef_matrix <- function(sites_table,count){
   return(coef_matrix)
 }
 
-#' @title collect exons to be merged into a list
+#' @title moduleExtract
 #' @description  extract exons to be merged according to the exon merge flag table
-#' @details exons which can be merged according to the exon merge flag table are extracted
+#' @details sites which can be merged according to the exon merge flag table are extracted
 #' together into a group. All different merge groups are collected as a list
-#' @param data A square matrix of logical values, indicating if each two exons should be merged
+#' @param coef_matrix A square matrix of logical values, indicating if each two sites should be merged
+#' @param eps The threshold for two sites to be merged
 #' @importFrom dbscan dbscan
-#' @return A list of vectors with variable length,each vector represents a group of exons to be merged
+#' @importFrom magrittr %>%
+#' @importFrom dplyr group_by
+#' @importFrom dplyr summarise
+#' @return A list of vectors with variable length,each vector represents a group of sites to be merged
 moduleExtract <- function(coef_matrix,eps = 0.05){
   if(nrow(coef_matrix) != ncol(coef_matrix)){
     stop("The similarity matrix should be symmetric!")
@@ -157,7 +198,11 @@ moduleExtract <- function(coef_matrix,eps = 0.05){
   return(cluster$node)
 }
 
-
+#' @title siteMerge
+#' @description  Merge sites within the same group
+#' @details Merge sites within the same group
+#' @param site_matrix A binary matrix to indicate if the sites exist
+#' @return A vector for the meta splicing site.
 siteMerge = function(site_matrix){
   if(is.null(nrow(site_matrix))){
     return(site_matrix)
@@ -166,6 +211,13 @@ siteMerge = function(site_matrix){
   return(merge)
 }
 
+#' @title metaSpliceSite
+#' @description  Merge sites into meta sites based on their co-existence or if they are mutually exclusive
+#' @details Merge sites into meta sites based on their co-existence or if they are mutually exclusive
+#' @inheritParams sites_coef_matrix
+#' @inheritParams moduleExtract
+#' @return A list with two elements, the first one is the count matrix of meta splicing sites,
+#' the second one is the component of the meta splicing sites
 metaSpliceSite = function(sites_table,count,eps = 0.05){
   if(is.na(eps)){
     meta = sites_table
@@ -195,6 +247,22 @@ metaSpliceSite = function(sites_table,count,eps = 0.05){
   return(out)
 }
 
+#' @title spliceTable
+#' @description  Merge sites into meta sites for a gene
+#' @details Merge sites into meta sites for a gene
+#' @param data A dataframe recording the isoform for a gene
+#' @param strand The strand of the target gene
+#' @param eps The threshold for two sites to be merged
+#' @param cell_col The name of the column recording the cell barcode
+#' @param iso_col The name of the column recording the isoform string
+#' @param count_col The name of the column recording the isoform count in each cell
+#' @param polyA_col The name of the column recording the polyA existence for a read
+#' @inheritParams isoform2sites
+#' @importFrom dplyr mutate_at
+#' @importFrom dplyr group_by_at
+#' @importFrom dplyr summarise
+#' @importFrom dplyr filter
+#' @return A metaSite object for a gene
 spliceTable = function(data,strand,eps = 0.05, cell_col = "cell", iso_col = "isoform",
                        count_col = "count",polyA_col = "polyA", split = "|",sep = ","){
   iso_uniq = unique(data[,iso_col])
@@ -335,16 +403,22 @@ extractExonTable <- function(spliceOb,gene,gene_bed = NULL,
   return(isoform_table)
 }
 
-#' @title count exons in each cell
-#' @description summarise the exon count and gene count for each single cell
-#' @details Due to the truncation, the exons are counted in a censoring way, only
-#' exons between two exons or between an exon and polyA will be treated as spliced out,
+#' @title cellGeneSiteCount
+#' @description summarise the site count and gene count for each single cell
+#' @details Due to the truncation, the sites are counted in a censoring way, only
+#' sites between two sites or between a site and the polyA will be treated as spliced out,
 #' otherwise it is censor and won't be counted.
-#' @param exon_table a dataframe of count for mutil-exons in each isoform
-#' @param cell_col the name of the cell column in the exon table
-#' @return a list of exon count table and gene count table for each cell
-#' @import dplyr
+#' @param splice_site_table a dataframe of count for splicing sites in each isoform
+#' @param cell_col The name of the column recording the cell barcode
+#' @param count_col The name of the column recording the isoform count in each cell
+#' @return a list of site count table and gene count table for each cell
+#' @importFrom dplyr group_by_at
+#' @importFrom dplyr summarise_at
+#' @importFrom dplyr select
+#' @importFrom dplyr one_of
 #' @importFrom stats na.omit
+#' @return A list including two dataframes, the fisrt one records the gene count for each site in each cell,
+#' while the second one record the spliced-in site count.
 cellGeneSiteCount <- function(splice_site_table,cell_col = "cell",count_col = "count"){
   cell_gene_count = splice_site_table %>% group_by_at(cell_col) %>%
     summarise_at(setdiff(colnames(splice_site_table),c(cell_col,count_col)),
@@ -364,6 +438,15 @@ cellGeneSiteCount <- function(splice_site_table,cell_col = "cell",count_col = "c
   return(list(cell_gene_count,cell_site_count))
 }
 
+
+#' @title geneSiteTable_df
+#' @description merge sites into meta sites and summarise the site count and gene count for each single cell
+#' @details An integration function for spliceTable() and cellGeneSiteCount()
+#' @inheritParams spliceTable
+#' @inheritParams cellGeneSiteCount
+#' @return A list including two dataframes, the fisrt one records the gene count for each site in each cell,
+#' while the second one record the spliced-in site count.
+#' @export
 geneSiteTable_df = function(data,strand,eps = 0.05, cell_col = "cell", iso_col = "isoform",
                                count_col = "count",polyA_col = "polyA", split = "|",sep = ","){
   splice_table = spliceTable(data = data,strand = strand, eps = eps,cell_col = cell_col, iso_col = iso_col,
@@ -376,16 +459,30 @@ geneSiteTable_df = function(data,strand,eps = 0.05, cell_col = "cell", iso_col =
   return(cell_gene_site_count)
 }
 
+#' @title geneSiteTable.base
+#' @description An interface function to apply geneSiteTable_df for target genes in a Splice object
+#' @details An interface function to apply geneSiteTable_df for target genes in a Splice object
+#' @param spliceOb A Splice object
+#' @param gene_bed The gene bed annotation, should include the gene name and the gene strand.
+#' @param genes The target genes to generate meta sites, default for all genes
+#' @param eps The threshold for two sites to be merged
+#' @param bed_gene_col The name of the column to record the gene name in the gene bed
+#' @param bed_strand_col The name of the column to record the gene strand in the gene bed
+#' @param overwrite The flag to decide if overwrite the computed metaSite object
+#' @param verbose The flag to indicate if print the information
+#' @return A Splice object with meta sites stored the in the meta_sites slot.
+#' @export
 geneSiteTable.base = function(spliceOb,gene_bed,genes= "all",eps = 0.05,
                               bed_gene_col = "gene",bed_strand_col = "strand",
+                              overwrite = FALSE,
                               verbose = TRUE){
   if(genes[1] == "all"){
-    genes = spliceOb@genes
+    genes = spliceOb@genes$gene
   }
-  diff = setdiff(genes,spliceOb@genes)
+  diff = setdiff(genes,spliceOb@genes$gene)
   if(length(diff) > 0){
     warning(paste(head(diff,10),collapse = ","),"... don't exsit in the splice object, will be ignored!")
-    genes = genes[genes %in% spliceOb@genes]
+    genes = genes[genes %in% spliceOb@genes$gene]
   }
 
   sub_bed = unique(gene_bed %>%
@@ -400,18 +497,32 @@ geneSiteTable.base = function(spliceOb,gene_bed,genes= "all",eps = 0.05,
     if(verbose){
       print(gene_i)
     }
+
+    exist = TRUE
+    tryCatch({
+      cache = getMetaSites(spliceOb,gene_i)
+    },error = function(e) {
+      exist <<- FALSE
+    })
+
+    if(exist & !overwrite){
+      return(cache)
+    }
+
     strand_i = sub_bed[i,bed_strand_col]
     sub_data = as.data.frame(data %>% filter(gene == gene_i))
     gene_i_site_table = geneSiteTable_df(sub_data,strand_i,eps = eps)
     if(is.null(gene_i_site_table)){
       return(NULL)
     }
+    #return(gene_i_site_table)
     meta_site_ob = new("metaSite",
                        sites = gene_i_site_table[[3]],
                        cellGeneCount = gene_i_site_table[[1]],
                        cellSiteCount = gene_i_site_table[[2]])
     return(meta_site_ob)
-  },future.seed=TRUE)
+  },future.seed=TRUE, future.globals=TRUE,future.packages = c("Longcell"))
+
   names(temp) = sub_bed[,bed_gene_col]
   temp<-temp[!sapply(temp,is.null)]
   spliceOb@meta_sites = temp
@@ -419,69 +530,23 @@ geneSiteTable.base = function(spliceOb,gene_bed,genes= "all",eps = 0.05,
 }
 
 
-#' @title count exons in each cell from a Splice object
-#' @description summarise the exon count and gene count for each single cell from a Splice object
-#' @details Due to the truncation, the exons are counted in a censoring way, only
-#' exons between two exons or between an exon and polyA will be treated as spliced out,
-#' otherwise it is censor and won't be counted.
-#' @param spliceOb the Splice object
-#' @param gene name of the target gene
-#' @param gene_bed gene bed annotation
-#' @param gtf gtf annotation
-#' @param cells cells to use in building exon count table
-#' @param exons exon to use in building exon count table
-#' @param exon_len_thresh the minimum length of an exon to be preserved in exon count table
-#' @param sep The seperation character between exons in the isoform string
-#' @return a list of exon count table and gene count table for each cell
-#' @export
-gene_exons_table.base <- function(spliceOb,gene,gene_bed = NULL,
-                                  cells = "all",exons = "all",
-                                  exon_len_thresh = 10,sep = "|"){
-  exon_table = extractExonTable(spliceOb,gene,gene_bed = gene_bed,
-                                cells = cells,exons = exons,
-                                exon_len_thresh = exon_len_thresh,sep = sep)
-  if(is.null(exon_table) || nrow(exon_table) == 0){
-    return(NULL)
-  }
-
-  count_list = cellGeneExonCount(exon_table)
-  return(count_list)
-}
-
-#' @title generic gene_exons_table function definition
+#' @title generic geneSiteTable function definition
 #' @param object the Splice or Seurat object
-#' @inheritParams gene_exons_table.base
+#' @inheritParams geneSiteTable.base
 #' @param ... other possible parameters for genes_groups_GLRT.base
 #' @export
-setGeneric("gene_exons_table",
-           function(object,gene,...) standardGeneric("gene_exons_table"))
+setGeneric("geneSiteTable",
+           function(object,gene_bed,genes,eps,...) standardGeneric("geneSiteTable"))
 
 #' @title generic gene_exons_table function for Splice object
 #' @param object a Splice object
-#' @inheritParams gene_exons_table.base
-#' @param ... parameters for gene_exons_table.base
+#' @inheritParams geneSiteTable.base
+#' @param ... parameters for geneSiteTable.base
 #' @export
-setMethod("gene_exons_table",
-          signature(object = "Splice",gene = "character"),
-          function(object,gene,gene_bed = NULL,...){
-            gene_exons_table.base(object,gene = gene,
-                                  gene_bed = gene_bed,...)
-          }
-)
-
-#' @title generic gene_exons_table function for Seurat object
-#' @param object a Seurat object with a Splice object in misc
-#' @param slot the slot name for the Splice object embedded in the Seurat object
-#' @inheritParams gene_exons_table.base
-#' @param ... parameters for gene_exons_table.base
-#' @import Seurat
-#' @export
-setMethod("gene_exons_table",
-          signature(object = "Seurat",gene = "character"),
-          function(object,gene,slot = "splice",
-                   gene_bed = NULL,...){
-            spliceOb = getSplice(object,slot = slot)
-            gene_exons_table.base(spliceOb,gene = gene,
-                                  gene_bed = gene_bed,...)
+setMethod("geneSiteTable",
+          signature(object = "Splice",gene_bed = "list",genes = "character"),
+          function(object,gene_bed,genes = "all", ...){
+            geneSiteTable.base(spliceOb = object,gene_bed = gene_bed,
+                               genes= genes,...)
           }
 )

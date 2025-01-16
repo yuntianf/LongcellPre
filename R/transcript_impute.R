@@ -1,37 +1,3 @@
-#' @title read2bins
-#' @description transform the read isoform string to a bin matrix
-#' @details transform the read isoform string to a bin matrix
-#' @param read A string to represent the isoform of a read
-#' @param sep The character to split the start and end position for each exon in the isoform.
-#' @param split The character to split the exons in the isoform
-#' @importFrom Longcellsrc isoform2sites
-#' @return A dataframe with two columns, the first column records the start of each exon, the second records
-#' the end position.
-read2bins = function(read,sep = ",",split = "|"){
-  sites = Longcellsrc::isoform2sites(read,split = split,sep = sep)
-  len = length(sites)
-  bins = as.data.frame(cbind(sites[seq(1,len,2)],sites[seq(2,len,2)]))
-  colnames(bins) = c("start","end")
-  return(bins)
-}
-
-#' @title binsum
-#' @description calculate the total length of a series of bins
-#' @details calculate the total length of a series of bins
-#' @param bin The bin matrix
-#' @param start_col,end_col The name of the column recording the start/end position
-#' @importFrom valr bed_merge
-#' @return A number as the total length.
-binsum = function(bin,start_col = "start",end_col = "end"){
-  bin = bin[,c(start_col,end_col)]
-  colnames(bin) = c("start","end")
-  bin$chrom = "chr1"
-
-  bin = as.data.frame(valr::bed_merge(bin))
-  size = sum(as.numeric(bin[,"end"]) - as.numeric(bin[,"start"]))+nrow(bin)
-  return(size)
-}
-
 #' @title intron_only
 #' @description judge if a read only contains intron sequence
 #' @details This function compares the coverage between the read and the annotated isoform, if the read

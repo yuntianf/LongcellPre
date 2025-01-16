@@ -1,0 +1,393 @@
+library(igraph)
+library(Seurat)
+library(dplyr)
+library(bluster)
+library(tidyr)
+
+clone_dis_full = function(embedding,meta,group_col,cell_col,outpath,
+                          cell_count_thresh = 10,
+                          overwrite = FALSE){
+  cells = intersect(rownames(embedding),rownames(meta))
+  if(length(cells) != length(rownames(embedding)) |
+     length(cells) != length(rownames(meta))){
+    warning("The meta and embedding don't have the same rownames, will use the intersection!")
+  }
+
+  embedding = as.matrix(embedding[cells,,drop = FALSE])
+  meta = meta[cells,]
+
+  if(file.exists(file.path(outpath,"groups.rds")) & !overwrite){
+    cat("The groups is already built and overwrite is not allowed, will use the exsting one!\n")
+    groups = readRDS(file.path(outpath,"groups.rds"))
+  }
+  else{
+    group_col = strsplit(group_col,split = "|",fixed = TRUE)
+    group_col = unlist(group_col)
+    groups=build_groups(meta,group_col,"cell",cell_count_thresh)
+    saveRDS(groups,file.path(outpath,"groups.rds"))
+  }
+
+  if(file.exists(file.path(outpath,"cell_graph.rds")) & !overwrite){
+    cat("The cell_graph is already calculated and overwrite is not allowed, will use the exsting one!\n")
+    cell_graph = readRDS(file.path(outpath,"cell_graph.rds"))
+  }
+  else{
+    cell_graph = makeSNNGraph(embedding,k = graph_k,type="number")
+    # cell_graph = delete.edges(cell_graph, E(cell_graph)[edge_attr(cell_graph)$weight < weight])
+    edge_attr(cell_graph)$weight = exp(-edge_attr(cell_graph)$weight)
+    saveRDS(cell_graph,file.path(outpath,"cell_graph.rds"))
+  }
+
+  if(file.exists(file.path(outpath,"groups_graph.rds")) & !overwrite){
+    cat("The groups_graph is already calculated and overwrite is not allowed, will use the exsting one!\n")
+    groups_graph = readRDS(file.path(outpath,"groups_graph.rds"))
+  }
+  else{
+    groups_graph = groups_dis(cell_graph,group1s = groups$id,group_2_dis = group_graph_dis)
+    saveRDS(groups_graph,file.path(outpath,"groups_graph.rds"))
+  }
+
+  return(groups_graph)
+}
+
+clone_dis_knn= function(embedding,meta,group_col,cell_col,outpath,
+                     cell_count_thresh = 10,group_k = 10,cell_k = 2,
+                     graph_k = 10,overwrite = FALSE){
+  cells = intersect(rownames(embedding),rownames(meta))
+  if(length(cells) != length(rownames(embedding)) |
+     length(cells) != length(rownames(meta))){
+    warning("The meta and embedding don't have the same rownames, will use the intersection!")
+  }
+
+  embedding = as.matrix(embedding[cells,,drop = FALSE])
+  meta = meta[cells,]
+
+  if(file.exists(file.path(outpath,"groups.rds")) & !overwrite){
+    cat("The groups is already built and overwrite is not allowed, will use the exsting one!\n")
+    groups = readRDS(file.path(outpath,"groups.rds"))
+  }
+  else{
+    group_col = strsplit(group_col,split = "|",fixed = TRUE)
+    group_col = unlist(group_col)
+    groups=build_groups(meta,group_col,"cell",cell_count_thresh)
+    saveRDS(groups,file.path(outpath,"groups.rds"))
+  }
+
+  if(file.exists(file.path(outpath,"groups_euclidean.rds")) & !overwrite){
+    cat("The groups_euclidean is already calculated and overwrite is not allowed, will use the exsting one!\n")
+    groups_euclidean = readRDS(file.path(outpath,"groups_euclidean.rds"))
+  }
+  else{
+    groups_euclidean= groups_dis(embedding,group1s = groups$group,group_2_dis = group_euclidean_dis)
+    saveRDS(groups_euclidean,file.path(outpath,"groups_euclidean.rds"))
+  }
+  group_knn_flat = as.data.frame(knn_flat(as.dist(as.matrix(groups_euclidean)),group_k,if_dedup = TRUE))
+  colnames(group_knn_flat) = c("group1","group2","dist")
+
+  if(file.exists(file.path(outpath,"cell_graph.rds")) & !overwrite){
+    cat("The cell_graph is already calculated and overwrite is not allowed, will use the exsting one!\n")
+    cell_graph = readRDS(file.path(outpath,"cell_graph.rds"))
+  }
+  else{
+    cell_graph = makeSNNGraph(embedding,k = graph_k,type="number")
+    # cell_graph = delete.edges(cell_graph, E(cell_graph)[edge_attr(cell_graph)$weight < weight])
+    edge_attr(cell_graph)$weight = exp(-edge_attr(cell_graph)$weight)
+    saveRDS(cell_graph,file.path(outpath,"cell_graph.rds"))
+  }
+
+  if(file.exists(file.path(outpath,"groups_graph.rds")) & !overwrite){
+    cat("The groups_graph is already calculated and overwrite is not allowed, will use the exsting one!")
+    groups_graph = readRDS(file.path(outpath,"groups_graph.rds"))
+  }
+  else{
+    groups_graph = lapply(1:nrow(group_knn_flat),function(i){
+      group1 = unlist(groups[group_knn_flat[i,"group1"],]$id)
+      group2 = unlist(groups[group_knn_flat[i,"group2"],]$id)
+
+      dis = group_graph_dis(cell_graph,group1,group2,k = cell_k)
+      return(dis)
+    })
+    group_knn_flat$graph_dis = groups_graph
+    saveRDS(group_knn_flat,file.path(outpath,"groups_graph.rds"))
+  }
+
+  return(group_knn_flat)
+}
+
+build_groups = function(meta,groups_col,cell_col,count_thresh = 10){
+  flag = colnames(meta) == cell_col
+  if(sum(flag) == 0){
+    message = paste("There is column called ",cell_col,sep = "")
+    stop(message)
+  }
+  colnames(meta)[flag] = "cell"
+
+  out = lapply(groups_col,function(x){
+        groups = meta %>% group_by_at(c(x)) %>%
+                  summarise(group = list(cell),id = list(cur_group_rows()),count = n(),.groups = "drop")
+        groups = na.omit(groups)
+        groups = groups %>% filter(count >= 10)
+        colnames(groups)[1] = "cluster"
+
+        return(groups)
+  })
+  out = do.call(rbind,out)
+  return(out)
+}
+
+cell_dis = function(cell_embedding,id = NULL,k = 10,weight = 3,file = NULL){
+  if(is.null(id)){
+    id = 1:nrow(cell_embedding)
+  }
+
+  sNN = makeSNNGraph(cell_embedding,k = k,type="number")
+  sNN = delete.edges(sNN, E(sNN)[edge_attr(sNN)$weight < weight])
+  edge_attr(sNN)$weight = exp(-edge_attr(sNN)$weight)
+
+  start = Sys.time()
+  exprs_dis = distances(sNN,v = id,to = id,algorithm = "automatic")
+  rownames(exprs_dis) = colnames(exprs_dis) = rownames(cell_embedding[id,])
+  end = Sys.time()
+  print(end - start)
+
+  if(!is.null(file)){
+    saveRDS(exprs_dis,file)
+  }
+  return(exprs_dis)
+}
+
+top_k = function(v,k,decreasing = FALSE){
+  v = sort(v,decreasing = decreasing)
+  return(v[1:k])
+}
+
+group_2_min = function(distance,group1,group2, k = 3){
+  sub_dis = distance[group1,group2]
+  if(is.null(nrow(sub_dis))){
+    out = mean(sub_dis)
+  }
+  else{
+    out = mean(c(mean(apply(sub_dis,1,function(x) mean(top_k(x,k)))),
+                 mean(apply(sub_dis,2,function(x) mean(top_k(x,k))))))
+  }
+  return(out)
+}
+
+group_2_min_bs = function(distance,group1,group2, k = 3,niter = 50){
+  dis = group_2_min(distance,group1,group2, k)
+
+  pool = c(group1,group2)
+  null = sapply(1:niter,function(i){
+    sample_1 = sample(pool,length(group1),replace = FALSE)
+    sample_2 = setdiff(pool,sample_1)
+
+    return(group_2_min(distance,sample_1,sample_2, k))
+  })
+
+  out = (dis-mean(null))/sd(null)
+  return(out)
+}
+
+group_2_mean = function(distance,group1,group2){
+  sub_dis = as.matrix(distance[group1,group2])
+
+  if(nrow(sub_dis) == 1){
+    out = mean(sub_dis)
+  }
+  else{
+    if(length(setdiff(group1,group2)) == 0 & length(setdiff(group2,group1)) == 0){
+      out = mean(sub_dis[upper.tri(sub_dis)])
+    }
+    else{
+      out = mean(sub_dis)
+    }
+  }
+  return(out)
+}
+
+group_euclidean_dis = function(coord,group1,group2,k = 2){
+  coord1 = coord[group1,,drop = FALSE]
+  coord2 = coord[group2,,drop = FALSE]
+
+  nn_1_in_2 = mean(rowMeans(nn2(coord1,coord2, k = k)$nn.dists))
+  nn_2_in_1 = mean(rowMeans(nn2(coord2,coord1, k = k)$nn.dists))
+
+  dis = (nn_1_in_2+nn_2_in_1)/2
+  return(dis)
+}
+
+group_graph_dis = function(graph,group1,group2,k = 2){
+  dis = distances(graph,v = group1,to = group2,algorithm = "automatic")
+  out = group_2_min(dis,group1 = 1:nrow(dis),group2 = 1:ncol(dis), k = k)
+  return(out)
+}
+
+groups_dis = function(data,group1s,group2s = NULL,group_2_dis = group_2_min,self = TRUE,...){
+  if(is.null(group2s) & !self){
+    stop("The group 2 is not provided, to calculate within group distance please set self to be TRUE")
+  }
+  if(self){
+    n = length(group1s)
+    if(n == 1){
+      return(0)
+    }
+    out = lapply(1:(n-1),function(i){
+      group1_id = group1s[[i]]
+      sub_out = lapply((i+1):n,function(j){
+        group2_id = group1s[[j]]
+        ot = group_2_dis(data,group1_id,group2_id,...)
+        return(c(i,j,ot))
+      })
+      sub_out = as.data.frame(do.call(rbind,sub_out))
+    })
+    out = as.data.frame(do.call(rbind,out))
+    self_dis = as.data.frame(cbind(1:n,1:n,0))
+    out = rbind(out,self_dis)
+  }
+  else{
+    n = length(group1s)
+    m = length(group2s)
+    out = lapply(1:n,function(i){
+      group1_id = group1s[[i]]
+      sub_out = lapply(1:m,function(j){
+        group2_id = group2s[[j]]
+        ot = group_2_dis(data,group1_id,group2_id,...)
+
+        return(c(i,j,ot))
+      })
+      sub_out = as.data.frame(do.call(rbind,sub_out))
+    })
+    out = as.data.frame(do.call(rbind,out))
+  }
+
+  colnames(out) = c("group1","group2","dis")
+  out = out %>% arrange(group1,group2)
+  out = long2wide(out,row_names_from = "group1",
+                  col_names_from = "group2",values_from = "dis",symmetric = self)
+
+  return(out)
+}
+
+euclidean2graph = function(groups,euclidean,cell_coord,group_k = 10,cell_k = 2){
+
+}
+
+dis_collapse = function(distance,groups,group_2_dis = group_2_mean){
+  n = length(groups)
+
+  out = lapply(1:n,function(i){
+    group1_id = groups[[i]]
+    sub_out = lapply(i:n,function(j){
+      group2_id = groups[[j]]
+      ot = group_2_dis(distance,group1_id,group2_id)
+
+      return(c(i,j,ot))
+    })
+    sub_out = as.data.frame(do.call(rbind,sub_out))
+  })
+  out = as.data.frame(do.call(rbind,out))
+
+  colnames(out) = c("group1","group2","dis")
+  out = out %>% arrange(group1,group2)
+  out = long2wide(out,row_names_from = "group1",
+                  col_names_from = "group2",values_from = "dis",symmetric = TRUE)
+  return(out)
+}
+
+update_group_dis = function(mat,distance,groups,contents){
+  out = matrix(NA,nrow = length(groups),ncol = length(groups))
+  if(length(groups) == 1){
+    return(as.matrix(0))
+  }
+
+  id = sapply(groups,function(x) length(x) == 1)
+
+  non_merge = unlist(groups[id])
+
+  out[id,id] = as.matrix(mat[non_merge,non_merge])
+
+  between_dis = groups_dis(dist = distance,group1s = contents[!id],group2s = contents[id],self = FALSE)
+  out[!id,id] = as.matrix(between_dis)
+  out[id,!id] = t(as.matrix(between_dis))
+
+  within_dis = groups_dis(dist = distance,group1s = contents[!id],self = TRUE)
+  out[!id,!id] = as.matrix(within_dis)
+
+  return(out)
+}
+
+group_exprs_dis = function(cell_embedding,group,group_id,
+                           k = 10,weight = 4,file = NULL){
+  cd = cell_dis(cell_embedding,group_id,k,weight,file)
+  gd = group_dis(cd,group)
+  return(gd)
+}
+
+group_2_reladis = function(distance,group1_id,group2_id,iter = 100){
+  if(length(group2_id) > length(group1_id)){
+    temp = group2_id
+    group2_id = group1_id
+    group1_id = temp
+  }
+
+  subdis = distance[group1_id,group2_id]
+  group_dis_sample = sapply(1:iter,function(i){
+    sample_id = sample(1:length(group1_id),size = length(group2_id),replace = FALSE)
+    return(mean(subdis[sample_id,]))
+  })
+
+  selfdis = distance[group1_id,group1_id]
+  self_dis_sample = sapply(1:iter,function(i){
+    sample1_id = sample(1:length(group1_id),size = length(group2_id),replace = FALSE)
+    sample2_id = sample(1:length(group1_id),size = length(group2_id),replace = FALSE)
+    return(mean(selfdis[sample1_id,sample2_id]))
+  })
+
+  return(list(group_dis_sample,self_dis_sample))
+}
+
+group_2_prob = function(distance,group1,group2,iter = 100){
+  dis = group_2_dis(distance,group1,group2)
+
+  n1 = length(group1)
+  pool = c(group1,group2)
+
+  blank = sapply(1:iter,function(i){
+    sample_group1 = sample(pool,n1,replace = FALSE)
+    sample_group2 = setdiff(pool,sample_group1)
+    sample_dis = group_2_dis(distance,sample_group1,sample_group2)
+    return(sample_dis)
+  })
+  return(blank)
+  return(sum(dis < blank)/iter)
+}
+
+groups_prob = function(distance,group1s,group2s = NULL,self = FALSE,iter = 100){
+  if(!is.null(group2s) & self){
+    warning("self is set to be true, only the within group distance for group1 will be calculated!
+            To allow for between group calculation please set self as FALSE!")
+  }
+  if(self){
+    prob = lapply(1:(length(group1s)-1),function(i){
+      sub_prob = lapply((i+1):length(group1s),function(j){
+        out = group_2_prob(distance,group1s[[i]],group1s[[j]],iter)
+        return(c(i,j,out))
+      })
+      sub_prob = as.data.frame(do.call(rbind,sub_prob))
+      return(sub_prob)
+    })
+  }
+  else{
+    prob = lapply(1:length(group1s),function(i){
+      sub_prob = lapply(1:length(group2s),function(j){
+        out = group_2_prob(distance,group1s[[i]],group2s[[j]],iter)
+        return(c(i,j,out))
+      })
+      sub_prob = as.data.frame(do.call(rbind,sub_prob))
+      return(sub_prob)
+    })
+  }
+  prob = as.data.frame(do.call(rbind,prob))
+  colnames(prob) = c("i","j","prob")
+  return(prob)
+}

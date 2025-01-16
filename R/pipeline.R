@@ -68,7 +68,7 @@ createAnnotation = function(gtf_path = NULL,gene_bed_path = NULL,work_dir = "./"
 #' @inheritParams createAnnotation
 #' @param overwrite The flag to indicate if the annotation file needs to be rewritten.
 #' @export
-annotation = function(gtf_path = NULL,gene_bed_path = NULL,work_dir = "./",overwrite = TRUE,
+annotation = function(gtf_path = NULL,gene_bed_path = NULL,work_dir = "./",overwrite = FALSE,
                       bed_chr_col = "chr",bed_start_col = "start",bed_end_col = "end",
                       bed_strand_col = "strand",bed_gene_col = "gene"){
   if(file.exists(file.path(work_dir,"annotation/gene_bed.rds"))){
@@ -437,6 +437,7 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
       warning("The gtf annotation is not provided for the isoform imputation, will skip this step!")
     }
   }
+
   count = as.data.frame(do.call(rbind,count))
   count = count %>% dplyr::select(cell,gene,isoform,count,polyA)
   saveResult(count,file.path(dir,"iso_count.txt"))

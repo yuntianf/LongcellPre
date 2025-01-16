@@ -1,0 +1,26 @@
+{
+    "id": "92ABB0DB",
+    "path": "C:/yuntian/Necessary/Upenn/Thesis/project/Jackson_GBM/method/github/TCRprofile/R/TCR_dis_function.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "2176114245",
+    "contents": "",
+    "dirty": false,
+    "created": 1731786481483.0,
+    "source_on_save": false,
+    "relative_order": 10,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "224,42",
+        "scrollLine": "0"
+    },
+    "folds": "54|53|114|0|\n137|76|156|0|\n158|41|161|0|\n163|54|173|0|\n175|68|188|0|\n190|48|205|0|\n207|58|216|0|\n274|68|294|0|\n296|58|316|0|\n319|58|323|0|\n325|68|346|0|\n348|59|362|0|\n364|80|392|0|\n",
+    "lastKnownWriteTime": 1732569777,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1733496012182,
+    "read_only": false,
+    "read_only_alternatives": []
+}

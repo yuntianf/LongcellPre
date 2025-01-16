@@ -23,7 +23,7 @@ seq_config = function(protocol,toolkit,
     barcode_len = 16
     UMI_len = 10
   }
-  if(protocol == "VISIUM"){
+  else if(protocol == "VISIUM"){
     if(toolkit == 5){
       adapter = "TTTCTTATATGGG"
     }
