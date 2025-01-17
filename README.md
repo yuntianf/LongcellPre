@@ -10,7 +10,7 @@ requires:
 You can install `LongcellPre` by `devtools`:
 ```
 devtools::install_github("yuntianf/Longcellsrc")
-BiocManager::install(c("Rsamtools", "GenomicRanges", "IRanges", "BSgenome"))
+BiocManager::install(c("Rsamtools", "GenomicRanges", "IRanges", "BSgenome", "GenomicFeatures"))
 devtools::install_github("yuntianf/LongcellPre",dependencies=TRUE)
 ```
 
