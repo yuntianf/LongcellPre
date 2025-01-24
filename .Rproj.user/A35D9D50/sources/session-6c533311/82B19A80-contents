@@ -6,7 +6,7 @@
 #' @importFrom BiocManager install
 #' @return A BSgenome object
 load_genome <- function(genome_name) {
-  genome_list = available.genomes()
+  genome_list = BSgenome::available.genomes()
 
   if(genome_name %in% genome_list){
     genome_package = genome_name

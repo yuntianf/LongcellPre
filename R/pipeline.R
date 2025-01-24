@@ -443,13 +443,13 @@ umi_count_corres = function(data,qual,dir,gene_bed,genome_name,gtf = NULL,
 
   ### transform the count to fastq
   genome = load_genome(genome_name)
-  reads = isoformCount2Reads(count,genome,gene_bed,file.path(dir,"polish.fq.gz"))
+  reads = isoformCount2Reads(count,genome,gene_bed,file.path(dir,"UMI_collapsed.fq.gz"))
 
   qname = as.character(reads@id)
   annot = extractAnnotFromQname(qname,"cell")
   qname = cbind(qname,annot)
 
-  saveResult(qname,file.path(dir,"read_annot.csv"))
+  saveResult(qname,file.path(dir,"reads_annot.csv"))
   return(0)
 }
 
