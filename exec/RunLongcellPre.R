@@ -6,43 +6,43 @@ library(argparse)
 argparse = function(){
 
   args <- commandArgs(trailingOnly = TRUE)  # Fetch only arguments passed to the script
-  full_help <- "-h" %in% args || "--help" %in% args & "--full" %in% args
+  full_help <- ("-h" %in% args || "--help" %in% args) & "--full" %in% args
 
   p = ArgumentParser(description = "Pipeline for single cell Nanopore RNA-seq preprocessing")
 
-  if (!full_help){
-    ### Necessary parameters
-    ##### sequencing related args
-    p$add_argument("-f", "--fastq", help="The path for the input fastq file",required =TRUE)
-    p$add_argument("-b", "--barcode", help="The path for the cell barcode whitelist",required =TRUE)
-    p$add_argument("-t", "--toolkit", help="The toolkit used in sequencing, should be 5 or 3",choices = c("5","3"),required =TRUE)
-    p$add_argument("-p", "--protocol", help="The sequencing protocol, ex. '10X', 'VISIUM', 'Curio'",
-                   choices = c("10X","VISIUM","Curio","other"),default = "10X",required =TRUE)
+  ### Necessary parameters
+  ##### sequencing related args
+  p$add_argument("-f", "--fastq", help="The path for the input fastq file",required =TRUE)
+  p$add_argument("-b", "--barcode", help="The path for the cell barcode whitelist",required =TRUE)
+  p$add_argument("-t", "--toolkit", help="The toolkit used in sequencing, should be 5 or 3",choices = c("5","3"),required =TRUE)
+  p$add_argument("-p", "--protocol", help="The sequencing protocol, ex. '10X', 'VISIUM', 'Curio'",
+                 choices = c("10X","VISIUM","Curio","other"),default = "10X",required =TRUE)
 
-    ##### reference related args
-    p$add_argument("-g", "--genome_path", help="The path of the genome reference", required =TRUE)
-    p$add_argument("-n", "--genome_name", help="the genome name used for mapping, ex. hg38", required =TRUE)
+  ##### reference related args
+  p$add_argument("-g", "--genome_path", help="The path of the genome reference", required =TRUE)
+  p$add_argument("-n", "--genome_name", help="the genome name used for mapping, ex. hg38", required =TRUE)
 
-    p$add_argument("--gtf", help="The path of the gtf annotation",required = FALSE)
-    p$add_argument("--gene_bed_path", help="The path of the gene bed annotation",required = FALSE)
-    p$add_argument("--minimap_bed_path", help="The path of your bed annotation for minimap2, can be generated from GTF/GFF3 with ‘paftools.js gff2bed anno.gtf’",
-                   required = FALSE)
+  p$add_argument("--gtf", help="The path of the gtf annotation",required = FALSE)
+  p$add_argument("--gene_bed_path", help="The path of the gene bed annotation",required = FALSE)
+  p$add_argument("--minimap_bed_path", help="The path of your bed annotation for minimap2, can be generated from GTF/GFF3 with ‘paftools.js gff2bed anno.gtf’",
+                 required = FALSE)
 
-    ##### output related args
-    p$add_argument("-o","--work_dir", help="The output directory", default = "./")
-    p$add_argument("--to_isoform", help="A flag to indicate if the cell by isoform matrix should be generated", default = TRUE)
+  ##### output related args
+  p$add_argument("-o","--work_dir", help="The output directory", default = "./")
+  p$add_argument("--to_isoform", help="A flag to indicate if the cell by isoform matrix should be generated", default = TRUE)
 
-    ##### parallel related args
-    p$add_argument("-c","--cores", help="The number of cores used for parallization", default = 1)
-    p$add_argument("-m","--mode", help="The mode for parallization. The parallization is implemented with future.apply,
+  ##### parallel related args
+  p$add_argument("-c","--cores", help="The number of cores used for parallization", default = 1)
+  p$add_argument("-m","--mode", help="The mode for parallization. The parallization is implemented with future.apply,
                  the feasible modes can be 'sequential','multicore','cluster'",
-                   choices = c("sequential","multisession","multicore","cluster"), default = "sequential")
+                 choices = c("sequential","multisession","multicore","cluster"), default = "sequential")
 
-    ##### tool related args
-    p$add_argument("--minimap2", help="The path of the minimap2", default = "minimap2")
-    p$add_argument("--samtools", help="The path of the samtools", default = "samtools")
-    p$add_argument("--bedtools", help="The path of the bedtools", default = "bedtools")
+  ##### tool related args
+  p$add_argument("--minimap2", help="The path of the minimap2", default = "minimap2")
+  p$add_argument("--samtools", help="The path of the samtools", default = "samtools")
+  p$add_argument("--bedtools", help="The path of the bedtools", default = "bedtools")
 
+  if (!full_help){
     message("Here only shows the necessary parameters to run this pipeline. To get a full list of parameters, please run Rscript RunLongcellPre.R -h --full")
   }
   else{
