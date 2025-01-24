@@ -121,6 +121,7 @@ size_filter_error <- function(size,ratio = 0.1){
 #' @param isoforms A string vector, each string represent a corrected isoform by collapse of reads
 #' from the same UMI
 #' @inheritParams isoform_dis_cluster
+#' @importFrom dplyr row_number
 #' @return A numeric vector to indicating whether the cluster is filtered out or not
 isoform_size_filter <- function(isoforms,size,ratio = 0.1,...){
   if(length(isoforms) == 1){

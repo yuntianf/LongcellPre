@@ -211,7 +211,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
   cores = coreDetect(cores)
 
   # barcode match
-  cat("Start to do barcode match:")
+  cat("Start to do barcode match:\n")
   do_bc_flag = TRUE
   if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt")) &
      file.exists(file.path(work_dir,"polish.fq.gz"))){
@@ -252,7 +252,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
 
 
   # fastq mapping
-  cat("Start to map polished fastq to genome:")
+  cat("Start to map polished fastq to genome:\n")
   do_map_flag = TRUE
   if(file.exists(file.path(work_dir,"bam/polish.bam"))){
     if(!force_map){
@@ -274,7 +274,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
   }
 
   # isoform extraction
-  cat("Start to extract isoforms:")
+  cat("Start to extract isoforms:\n")
   do_extract_flag = TRUE
   if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt")) &
      file.exists(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))){
@@ -375,7 +375,7 @@ umi_count_corres = function(data,qual,dir,gene_bed,genome_name,gtf = NULL,
 
   gene_strand = unique(gene_bed[,c(bed_gene_col,bed_strand_col)])
 
-  cat("Start to do UMI deduplication:")
+  cat("Start to do UMI deduplication:\n")
   start_time <- Sys.time()
   mem = peakRAM::peakRAM({
     count = future_lapply(data_split,function(x){
