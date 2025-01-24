@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[3]:
+
+
+import umap.umap_ as umap
+import scipy.sparse
+import random
+
+
+# In[3]:
+
+
+def umap_from_knn(adj,n_neighbors = 10,seed = 1024):
+    random.seed(seed)
+    adj_matrix_sparse = scipy.sparse.csr_matrix(adj)
+
+    # Apply UMAP using the kNN graph directly
+    umap_model_precomputed = umap.UMAP(metric='precomputed',n_neighbors = n_neighbors)
+    umap_embedding_precomputed = umap_model_precomputed.fit_transform(adj_matrix_sparse)
+    
+    return(umap_embedding_precomputed)
+
+
+# In[ ]:
+
+
+
+

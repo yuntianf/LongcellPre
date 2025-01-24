@@ -1,6 +1,6 @@
 Package: LongcellPre
 Type: Package
-Title: Generate single cell isoform expression matrix from bam alignment
+Title: Generate single cell isoform expression matrix from fastq
 Version: 1.2.0
 Author: Yuntian Fu
 Maintainer: Yuntian Fu <yuntianfu0@gmail.com>

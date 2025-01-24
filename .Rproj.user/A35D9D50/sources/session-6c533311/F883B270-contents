@@ -123,7 +123,7 @@ psiHist.base <- function(spliceOb, gene, site, cells = "all",
 }
 
 #' @title generic psiHist function definition
-#' @param object the Splice or Seurat object
+#' @param object the Splice object
 #' @inheritParams psiHist.base
 #' @param ... parameters for psiHist.base
 #' @export

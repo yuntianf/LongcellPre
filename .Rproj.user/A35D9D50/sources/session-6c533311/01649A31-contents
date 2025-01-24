@@ -1,0 +1,504 @@
+edge_summarise = function(edges,meta,
+                          edge_start_col = "cell1",edge_end_col = "cell2",
+                          weight_col = "sim",annot_col = "cluster"){
+  meta = as.data.frame(meta)
+  edges = as.data.frame(edges[,c(edge_start_col,edge_end_col,weight_col)])
+
+  annot_edges = as.data.frame(cbind(meta[edges[,edge_start_col],cluster_col],
+                                    meta[edges[,edge_end_col],cluster_col]))
+  colnames(annot_edges) = c("node1","node2")
+  annot_edges$weight = edges[,weight_col]
+
+  annot_edges = annot_edges %>%
+    group_by(node1,node2) %>% summarise(weight = sum(weight),.groups = "drop")
+  nodes = t(apply(annot_edges[,1:2], 1, sort))
+  annot_edges = as.data.frame(cbind(nodes,annot_edges$weight))
+  colnames(annot_edges) = c("node1","node2","weight")
+  annot_edges = annot_edges %>% mutate(weight = as.numeric(weight))
+  annot_edges = annot_edges %>% group_by(node1,node2) %>% summarise(weight = sum(weight),.groups = "drop")
+
+  colnames(annot_edges)[3] = weight_col
+  return(annot_edges)
+}
+
+
+edge_permute = function(edges,meta,n = 100,
+                        edge_start_col = "cell1",edge_end_col = "cell2",
+                        weight_col = "sim",annot_col = "cluster"){
+  ### orignal
+  annot_edges = edge_summarise(edges,meta,
+                               edge_start_col,edge_end_col,weight_col,annot_col)
+
+  ### permutation
+  permute = lapply(1:n,function(i){
+    annot = as.data.frame(sample(meta[,annot_col],nrow(meta),replace = FALSE))
+    colnames(annot) = annot_col
+    rownames(annot) = rownames(meta)
+
+    permute_edges = edge_summarise(edges,annot,
+                                   edge_start_col,edge_end_col,weight_col,annot_col)
+  })
+  permute = Reduce(function(x, y) full_join(x, y, by = c("node1","node2")), permute)
+  colnames(permute)[3:ncol(permute)] = paste("permute",1:n,sep = "_")
+
+  annot_edges = left_join(annot_edges,permute,by = c("node1","node2"))
+  annot_edges[is.na(annot_edges)] = 0
+
+  target = annot_edges$weight
+  background = annot_edges[,c(4:ncol(annot_edges))]
+
+  test = lapply(1:length(target),function(i){
+    target_i = target[i]
+    background_i = unlist(background[i,])
+
+    prob = sum(target_i > background_i)/n
+    bias = (target_i-mean(background_i))/sd(background_i)
+
+    return(c(prob,bias))
+  })
+  test = as.data.frame(do.call(rbind,test))
+  colnames(test) = c("p","z")
+
+  result = cbind(annot_edges[,c(1,2)],test)
+
+  return(result)
+}
+
+paga_connectivity = function(nodes_count,edges,nodes_col = c("node1","node2"),count_col = "count"){
+  edges = edges %>% mutate_at(nodes_col,as.character)
+  # edges_symmetry = long_symmetry(edges,row_names_from = nodes_col[1],col_names_from = nodes_col[2])
+  nodes_edge_count = edges %>% group_by_at(nodes_col[1]) %>% summarise_at(count_col,~sum(.))
+  nodes_edge_count = as.data.frame(nodes_edge_count)
+
+  total = sum(nodes_count)
+
+  connectivity = sapply(1:nrow(edges),function(i){
+    nodes = unlist(edges[i,nodes_col])
+
+    inter = unlist(edges[i,count_col])
+    edge_count1 = (nodes_edge_count %>% filter_at(nodes_col[1],~. == nodes[1]))[,count_col]
+    edge_count2 = (nodes_edge_count %>% filter_at(nodes_col[1],~. == nodes[2]))[,count_col]
+
+    node_count1 = nodes_count[nodes[1]]
+    node_count2 = nodes_count[nodes[2]]
+
+    control = (edge_count1*node_count2+edge_count2*node_count1)/(total-1)
+    return(inter/control)
+  })
+
+  return(connectivity)
+}
+
+
+knn_flat = function(x,k,symmetric = FALSE,if_dedup = FALSE,if_self = FALSE){
+  knn = dbscan::kNN(x = x,k = k)
+  flat = cbind(rep(1:nrow(knn$id),ncol(knn$id)),c(knn$id))
+  flat = cbind(flat,c(knn$dist))
+  colnames(flat) = c("node1","node2","dist")
+  if(symmetric){
+    flat = long_symmetry(flat,row_names_from = "node1",col_names_from = "node2")
+  }
+  if(if_dedup){
+    flag = combn_dedup(combn = flat[,c(1,2)])
+    flat = as.data.frame(flat[flag,])
+  }
+  if(if_self){
+    node_uniq = 1:nrow(x)
+    self = as.data.frame(cbind(node_uniq,node_uniq,0))
+    colnames(self) = c("node1","node2","dist")
+    flat = rbind(flat,self)
+  }
+  return(flat)
+}
+
+
+clone_pruned_network = function(cell_embedding,clone_embedding,cell_meta,cell_k = 50,clone_k = 10,
+                      clone_col = "clone",cluster_col = "cluster",cluster_cell_thresh = 30,
+                      connectivity_thresh = 0.05){
+  if(nrow(cell_embedding) != nrow(cell_meta)){
+    stop("The rows of cell_embedding should correspond to the rows of cell_meta!")
+  }
+
+  ### annotation
+  cell_meta = cell_meta %>% mutate_at(c(clone_col,cluster_col),as.character)
+  cell_meta = cell_meta %>% filter_at(clone_col,~. %in% rownames(clone_embedding))
+  cluster_cell_count = table(cell_meta[,cluster_col])
+  clusters = names(cluster_cell_count[cluster_cell_count >= cluster_cell_thresh])
+  cell_meta = cell_meta %>% filter_at(cluster_col,~. %in% clusters)
+
+  cell_embedding = cell_embedding[rownames(cell_meta),]
+
+  ### build cell knn network
+  cell_knn_flat = as.data.frame(knn_flat(cell_embedding,cell_k,symmetric = TRUE))
+  colnames(cell_knn_flat) = c("cell1","cell2","dist")
+
+  ### build clone knn network
+  clone_knn_flat = as.data.frame(knn_flat(clone_embedding,clone_k,symmetric = TRUE,if_self = TRUE))
+  colnames(clone_knn_flat) = c("clone1","clone2","dist")
+  clone_knn_flat = clone_knn_flat %>% mutate(clone1 = rownames(clone_embedding)[clone1],
+                                             clone2 = rownames(clone_embedding)[clone2])
+
+  ### check if cell knn match the clone knn
+  cell_meta = as.data.frame(cell_meta)
+  cell_clone_knn_id = cbind(cell_meta[cell_knn_flat[,1],clone_col],cell_meta[cell_knn_flat[,2],clone_col])
+
+  flag1 = unique(paste(clone_knn_flat[,1],clone_knn_flat[,2],sep = ","))
+  flag2 = paste(cell_clone_knn_id[,1],cell_clone_knn_id[,2],sep = ",")
+  flag = flag2 %in% flag1
+  cell_knn_flat_filter = cell_knn_flat[flag,]
+
+  ### test if the inter-cluster edges are significant
+  cluster_clone_edge_link_orig = as.data.frame(cbind(cell_meta[cell_knn_flat_filter[,1],cluster_col],
+                                             cell_meta[cell_knn_flat_filter[,2],cluster_col]))
+  colnames(cluster_clone_edge_link_orig) = c("node1","node2")
+
+  # cluster_clone_edge_link = cluster_clone_edge_link_orig %>% group_by_all() %>% summarise(count = n(),.groups = "drop")
+  # cluster_clone_edge_nodes = t(apply(cluster_clone_edge_link[,1:2], 1, sort))
+  # cluster_clone_edge_link = as.data.frame(cbind(cluster_clone_edge_nodes,cluster_clone_edge_link$count))
+  # colnames(cluster_clone_edge_link) = c("node1","node2","count")
+  # cluster_clone_edge_link = cluster_clone_edge_link %>% mutate(count = as.numeric(count))
+  # cluster_clone_edge_link = cluster_clone_edge_link %>% group_by(node1,node2) %>%
+  #   summarise(count = sum(count),.groups = "drop")
+  cluster_edge_link = edge_summarise(edges = cell_knn_flat %>% mutate(count = 1),meta = cell_meta,weight_col = "count",annot_col = cluster_col)
+  cluster_clone_edge_link = edge_summarise(edges = cell_knn_flat_filter %>% mutate(count = 1),meta = cell_meta,weight_col = "count",annot_col = cluster_col)
+
+  # cluster_clone_edge_link = cluster_clone_edge_link %>% filter(node1 != node2)
+
+  # return(cluster_clone_edge_link)
+  # cluster_clone_edge_link$pvalue = coexist_fisher_test(cluster_clone_edge_link)
+  # cluster_clone_edge_link = cluster_clone_edge_link %>% mutate(fdr = p.adjust(pvalue))
+  nodes_count = table(cell_meta[,cluster_col])
+  #return(list(nodes_count,cluster_clone_edge_link))
+  cluster_edge_link$connectivity = paga_connectivity(nodes_count,edges = cluster_edge_link)
+  cluster_clone_edge_link$connectivity = paga_connectivity(nodes_count,edges = cluster_clone_edge_link)
+
+  paga_edges = cluster_edge_link %>% filter(connectivity > connectivity_thresh) %>% dplyr::select(node1,node2,connectivity)
+  paga_edges = paga_edges %>% filter(node1 != node2)
+
+  edges = cluster_clone_edge_link %>% filter(connectivity > connectivity_thresh) %>% dplyr::select(node1,node2,connectivity)
+  edges = edges %>% filter(node1 != node2)
+
+  ### further prune cell network by the cluster highway
+  nodes = unique(cell_meta[,cluster_col])
+  flag1 = c(paste(edges$node1,edges$node2,sep = ","),
+            paste(edges$node2,edges$node1,sep = ","),
+            paste(nodes,nodes,sep = ","))
+  flag2 = paste(cluster_clone_edge_link_orig$node1,cluster_clone_edge_link_orig$node2,sep = ",")
+  flag = flag2 %in% flag1
+
+  cluster_clone_edge_link_orig = cluster_clone_edge_link_orig[flag,]
+
+  cell_knn_flat_filter = as.data.frame(cell_knn_flat_filter)
+  colnames(cell_knn_flat_filter) = c("cell1","cell2","dist")
+  cell_knn_flat_filter = cell_knn_flat_filter[flag,]
+  cell_knn_flat_filter = cell_knn_flat_filter %>% mutate(cell1 = rownames(cell_embedding)[cell1],
+                                                         cell2 = rownames(cell_embedding)[cell2])
+
+  edge_cells = as.data.frame(cbind(cluster_clone_edge_link_orig,cell_knn_flat_filter))
+  edge_cells = edge_cells %>% group_by(node1,node2) %>% summarise(cell = list(unique(c(cell1,cell2))),.groups = "drop")
+  edge_nodes = as.data.frame(t(apply(edge_cells[,1:2], 1, sort)))
+  colnames(edge_nodes) = c("node1","node2")
+  edge_nodes$cell = edge_cells$cell
+  edge_nodes = edge_nodes %>% group_by(node1,node2) %>% summarise(cell = list(unique(unlist(cell))),.groups = "drop")
+
+  edges = left_join(edges,edge_nodes,by = c("node1","node2"))
+
+  # node_uniq = sort(unique(cell_meta[,cluster_col]))
+  # edges= edges %>% mutate(node1 = node_uniq[node1],node2 = node_uniq[node2])
+
+  return(list(paga_trajecotry = paga_edges,pruned_trjectory = edges,cell_network = cell_knn_flat_filter))
+}
+
+cell_pruned_kNN = function(cell_embedding,cluster_edges,cell_meta,cell_k = 20,cluster_col = "cluster"){
+  if(nrow(cell_embedding) != nrow(cell_meta)){
+    stop("The rows of cell_embedding should correspond to the rows of cell_meta!")
+  }
+
+  cell_knn = dbscan::kNN(x = cell_embedding,k = cell_k)
+  cell_knn_flat = cbind(rep(1:nrow(cell_knn$id),ncol(cell_knn$id)),c(cell_knn$id))
+  cell_knn_dis_flat = cbind(cell_knn_flat,c(cell_knn$dist))
+
+  cell_meta = as.data.frame(cell_meta)
+  cell_cluster_knn_id = cbind(cell_meta[cell_knn_flat[,1],cluster_col],cell_meta[cell_knn_flat[,2],cluster_col])
+
+  flag1 = t(apply(cell_cluster_knn_id, 1, sort))
+  flag1 = paste(flag1[,1],flag1[,2],sep = ",")
+
+  cluster_edges = rbind(as.matrix(cluster_edges[,c(1,2)]),
+                        cbind(unique(cell_meta[,cluster_col]),unique(cell_meta[,cluster_col])))
+  flag2 = t(apply(cluster_edges, 1, sort))
+  flag2 = paste(flag2[,1],flag2[,2],sep = ",")
+
+  cell_knn_dis_flat = as.data.frame(cell_knn_dis_flat[flag1 %in% flag2,,drop = FALSE])
+
+  colnames(cell_knn_dis_flat) = c("node1","node2","dis")
+  flag = combn_dedup(combn = cell_knn_dis_flat[,c(1,2)])
+  cell_knn_dis_flat = cell_knn_dis_flat[flag,]
+  return(cell_knn_dis_flat)
+  # cell_knn_dis = long2square(cell_knn_dis_flat, row_names_from = "node1", col_names_from = "node2", values_from = "dis",
+  #                            symmetric = TRUE,na.fill = Inf,nodes = 1:nrow(cell_embedding))
+  #
+  # mds = isoMDS(as.matrix(cell_knn_dis), k=mds_k)
+  # mds_coord = mds$points
+  # rownames(mds_coord) = rownames(cell_knn_dis)
+  # return(mds_coord)
+}
+
+cell_pruned_network = function(cell_edges,cluster_edges,cell_meta,cluster_col = "cluster"){
+  cell_knn_dis_flat = cell_edges
+
+  cell_meta = as.data.frame(cell_meta)
+  cell_cluster_knn_id = cbind(cell_meta[cell_knn_dis_flat[,1],cluster_col],cell_meta[cell_knn_dis_flat[,2],cluster_col])
+
+  flag1 = t(apply(cell_cluster_knn_id, 1, sort))
+  flag1 = paste(flag1[,1],flag1[,2],sep = ",")
+
+  cluster_edges = rbind(as.matrix(cluster_edges[,c(1,2)]),
+                        cbind(unique(cell_meta[,cluster_col]),unique(cell_meta[,cluster_col])))
+  flag2 = t(apply(cluster_edges, 1, sort))
+  flag2 = paste(flag2[,1],flag2[,2],sep = ",")
+
+  cell_knn_dis_flat = as.data.frame(cell_knn_dis_flat[flag1 %in% flag2,,drop = FALSE])
+
+  colnames(cell_knn_dis_flat) = c("node1","node2","dis")
+  flag = combn_dedup(combn = cell_knn_dis_flat[,c(1,2)])
+  cell_knn_dis_flat = cell_knn_dis_flat[flag,]
+  return(cell_knn_dis_flat)
+}
+
+coexist_fisher_test = function(data){
+  data = as.data.frame(data)
+  colnames(data) = c("group1","group2","count")
+  pvalue = sapply(1:nrow(data),function(i){
+    sub = data[i,]
+    g1 = sub$group1
+    g2 = sub$group2
+
+    coexist = sub$count
+    mutual1 = sum((data %>% filter(group1 == g1 | group2 == g1))$count) - coexist
+    mutual2 = sum((data %>% filter(group1 == g2 | group2 == g2))$count) - coexist
+    exclusive = sum(data$count) - mutual2 - mutual1 - coexist
+
+    contigency = matrix(c(coexist, mutual1, mutual2, exclusive),nrow = 2,byrow = TRUE)
+    test = fisher.test(contigency, alternative = "greater")
+
+    return(test$p.value)
+  })
+}
+
+acct = function(T_mat) {
+  # Step 1: Compute the dominant eigenvalue and eigenvector using RSpectra
+  ev = RSpectra::eigs(T_mat, k = 1)
+  phi0 = as.numeric(ev$vectors)
+
+  # Step 2: Compute T_bar using sparse matrix operations
+  # T_bar = T_mat - phi0 %*% t(phi0) can be computed more efficiently
+  I = Matrix::Diagonal(nrow(T_mat))  # Identity matrix as a sparse matrix
+  # P = matrix(as.numeric(phi0 %*% t(phi0)),nrow = nrow(I))
+  A = I + Matrix::tcrossprod(phi0, phi0) - T_mat
+
+  # Use iterative solver for solving (I - T_bar)^{-1} * something
+  # This avoids the dense inversion of the matrix
+  M = Matrix::solve(A,I,method = "CG") - I  # Solve sparse system and subtract identity matrix
+
+  return(M)
+}
+
+DPT_T = function(T_mat,start){
+  M = acct(T_mat)
+
+  dpt = sqrt(rowSums((t(t(M)-M[start,]))^2))
+  return(dpt)
+}
+
+cluster_profile_enrich = function(cell_meta,cluster_col = "cluster",profile_col = "profile",fdr_thresh = 0.05){
+  cell_meta = as.data.frame(cell_meta) %>% filter_at(c(cluster_col,profile_col),~!is.na(.))
+  contigency = cell_meta %>% group_by_at(c(cluster_col,profile_col)) %>% summarise(count = n(),.groups = "drop")
+  contigency = as.data.frame(contigency)
+
+  nCluster = contigency %>% group_by_at(cluster_col) %>% summarise(count = sum(count))
+  nProfile = contigency %>% group_by_at(profile_col) %>% summarise(count = sum(count))
+  nTotal = nrow(cell_meta)
+
+  test = sapply(1:nrow(contigency),function(i){
+    cluster = contigency[i,cluster_col]
+    profile = contigency[i,profile_col]
+
+    inter = contigency[i,"count"]
+    n_cluster = (nCluster %>% filter_at(cluster_col,~. == cluster))$count
+    n_profile = (nProfile %>% filter_at(profile_col,~. == profile))$count
+
+    sub = binom.test(x = inter,n = n_cluster,p = n_profile/nTotal,alternative = "greater")
+    return(sub$p.value)
+  })
+
+  contigency = contigency %>% mutate(pvalue = test,fdr = p.adjust(test))
+
+  return(contigency)
+  #     contigency_mat = long2wide(long = contigency,
+  #                                row_names_from = cluster_col,
+  #                                col_names_from = profile_col,
+  #                                values_from = "fdr",
+  #                                symmetric = FALSE)
+  #     return(contigency_mat)
+}
+
+trajectory_profile_enrich = function(trajectory,cell_meta,
+                                     profile_col = "profile",fdr_thresh = 0.05,
+                                     edge_cell_cols = "cell"){
+  cell_meta = as.data.frame(cell_meta) %>% filter_at(c(profile_col),~!is.na(.))
+  enrich = lapply(1:nrow(trajectory),function(i){
+    cluster_cells = unlist(trajectory[i,edge_cell_cols])
+    n_cluster = length(cluster_cells)
+
+    sub = sapply(sort(unique(cell_meta[,profile_col])),function(j){
+      n_profile = sum(cell_meta[,profile_col] == j,na.rm = TRUE)
+      inter = sum(cell_meta[cluster_cells,profile_col] == j,na.rm = TRUE)
+      test = binom.test(x = inter,n = n_cluster,p = n_profile/nrow(cell_meta),alternative = "greater")
+      return(test$p.value)
+    })
+    return(sub)
+  })
+  enrich = do.call(rbind,enrich)
+
+  nprofile = ncol(enrich)
+  enrich = p.adjust(enrich,method = "fdr")
+  enrich = matrix(enrich,ncol = nprofile)
+
+  return(enrich)
+}
+
+edge_profile_deg = function(node_cells,exprs,cell_meta,profiles,k = 1,thresh = 30,fdr_thresh = 0.05,time_bins = 100,
+                            profile_col = "profile",pseudotime_col = "pseudotime"){
+  edge_cells = cell_meta[node_cells,] %>% filter_at(profile_col,~. %in% profiles) %>%
+    filter_at(pseudotime_col,~!is.na(.)) %>%
+    dplyr::select(any_of(c(profile_col,pseudotime_col)))
+
+  result = lapply(profiles,function(x){
+    time_thresh = (max(edge_cells[,pseudotime_col])-min(edge_cells[,pseudotime_col]))/time_bins
+
+    group1 = edge_cells %>% filter_at(c(profile_col), ~. == x) %>% dplyr::select(any_of(pseudotime_col))
+    group2 = edge_cells %>% filter_at(c(profile_col), ~. != x) %>% dplyr::select(any_of(pseudotime_col))
+    time_cell_pair = batchelor::findMutualNN(group1,group2, k1 = k)
+    time_cell_pair$dist = abs(group1[time_cell_pair$first,pseudotime_col]-group2[time_cell_pair$second,pseudotime_col])
+
+    time_cell_pair = as.data.frame(do.call(cbind,time_cell_pair))
+    time_cell_pair = time_cell_pair %>% filter(dist <= time_thresh)
+
+    group1_cell = rownames(group1)[time_cell_pair[,1]]
+    group2_cell = rownames(group2)[time_cell_pair[,2]]
+
+    exprs_filter = exprs[,c(group1_cell,group2_cell)]
+    exprs_filter = exprs_filter[rowSums(exprs_filter) > thresh,]
+
+    group1_exprs = as.matrix(exprs_filter[,group1_cell,drop = FALSE])
+    group2_exprs = as.matrix(exprs_filter[,group2_cell,drop = FALSE])
+
+    logFC = log2(rowMeans(group1_exprs)+1)-log2(rowMeans(group2_exprs)+1)
+
+    test = matrixTests::row_wilcoxon_twosample(group1_exprs,group2_exprs,alternative = "greater")
+    test = test %>% mutate(logFC = logFC,fdr = p.adjust(pvalue,method = "fdr")) %>% dplyr::select(logFC,pvalue,fdr) %>%
+      mutate(group = x) %>% filter(fdr <= fdr_thresh)
+    test$gene = rownames(test)
+
+    return(test)
+  })
+
+  result = do.call(rbind,result)
+  return(result)
+}
+
+trajectory_profile_deg = function(trajectory,exprs,cell_meta,
+                                  edge_start_col = "i",edge_end_col = "j",edge_profile_col = "profile",...){
+  colnames(trajectory)[colnames(trajectory) == edge_profile_col] = "profile"
+  overlap_edges = trajectory %>% mutate(count = sapply(profile,length)) %>% filter(count > 1)
+
+  results = lapply(1:nrow(overlap_edges),function(i){
+    nodes = unlist(overlap_edges[i,c(edge_start_col,edge_end_col)])
+
+    node_cells = unique(unlist(overlap_edges[i,"cell"]))
+    profiles = unlist(overlap_edges[i,"profile"])
+    deg = edge_profile_deg(node_cells,exprs,cell_meta,profiles,...)
+
+    deg = deg %>% mutate(path = paste(nodes,collapse = "-"))
+    return(deg)
+  })
+
+  results = do.call(rbind,results)
+  rownames(results) = NULL
+  return(results)
+}
+
+cluster_profile_deg = function(cluster, profile,cell_meta,exprs, k =3,
+                               cluster_col = "cluster",profile_col = "profile",pseudotime_col = "dpt",
+                               exprs_thresh = 30,time_bins = 100){
+  if(length(profile) == 1){
+    stop("At least two profiles should be provided for the detection of differentially expressed genes.")
+  }
+  cells = rownames(cell_meta %>% filter_at(cluster_col,~. %in% cluster) %>% filter_at(profile_col,~. %in% profile) %>%
+                     filter_at(pseudotime_col,~!is.na(.)&!is.infinite(.)))
+
+  time_thresh = (max(cell_meta[cells,pseudotime_col])-min(cell_meta[cells,pseudotime_col]))/time_bins
+
+  DEG = lapply(profile,function(x){
+    target_cells = cells[cell_meta[cells,profile_col] == x]
+    control_cells = cells[cell_meta[cells,profile_col] != x]
+
+    group1 = cell_meta[target_cells,] %>% dplyr::select(any_of(pseudotime_col))
+    group2 = cell_meta[control_cells,] %>% dplyr::select(any_of(pseudotime_col))
+
+    time_cell_pair = batchelor::findMutualNN(group1,group2, k1 = k)
+    time_cell_pair$dist = abs(group1[time_cell_pair$first,pseudotime_col]-group2[time_cell_pair$second,pseudotime_col])
+
+    time_cell_pair = as.data.frame(do.call(cbind,time_cell_pair))
+    time_cell_pair = time_cell_pair %>% filter(dist <= time_thresh)
+
+    group1_cell = rownames(group1)[time_cell_pair[,1]]
+    group2_cell = rownames(group2)[time_cell_pair[,2]]
+
+    target_pair = group1_cell
+    control_pair = group2_cell
+
+    if(length(target_pair) < 5 & length(control_pair) < 5){
+      return(NULL)
+    }
+
+    exprs_filter = exprs[,c(target_pair,control_pair)]
+    exprs_filter = exprs_filter[rowSums(exprs_filter) > exprs_thresh,]
+
+    target_exprs = as.matrix(exprs_filter[,target_pair,drop = FALSE])
+    control_exprs = as.matrix(exprs_filter[,control_pair,drop = FALSE])
+
+    logFC = log2(10000*rowMeans(target_exprs)+1)-log2(10000*rowMeans(control_exprs)+1)
+
+    test = matrixTests::row_wilcoxon_twosample(target_exprs,control_exprs,alternative = "greater")
+    test = test %>% mutate(logFC = logFC,fdr = p.adjust(pvalue,method = "fdr")) %>% dplyr::select(logFC,pvalue,fdr) %>% mutate(group = x)
+    test$gene = rownames(test)
+
+    return(test)
+  })
+
+  DEG = do.call(rbind,DEG)
+  return(DEG)
+}
+
+multi_cluster_profile_deg = function(cluster_profile_corres,cell_meta,exprs,fdr_thresh = 0.05,logFC_thresh = 0.25,...){
+  result = lapply(1:length(cluster_profile_corres),function(i){
+    cluster = names(cluster_profile_corres)[i]
+    profile = cluster_profile_corres[[i]]
+    # print(profile)
+    if(length(profile) < 2){
+      return(NULL)
+    }
+    DEG = cluster_profile_deg(cluster, profile,cell_meta,exprs,...)
+    if(length(DEG) == 0 || nrow(DEG) == 0){
+      return(NULL)
+    }
+    DEG$cluster = cluster
+    return(DEG)
+  })
+  result = do.call(rbind,result)
+
+  result = result %>% mutate(fdr = p.adjust(pvalue,method = "fdr")) %>% filter(fdr < fdr_thresh,logFC > logFC_thresh)
+  return(result)
+}

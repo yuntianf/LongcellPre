@@ -1,0 +1,64 @@
+import anndata
+import numpy as np
+import pandas as pd
+import scanpy as sc
+import matplotlib.pyplot as pl
+from matplotlib import rcParams
+
+def PAGA_wrapper(pca,cell_meta,cluster_col = None,
+                 if_diffmap = True,n_neighbors = 30,
+                 n_pcs = 30,resolution = 1,
+                 init_cluster = None,jobs = 1):
+    sc.settings.n_jobs = int(jobs)
+    
+    adata = anndata.AnnData(pca,
+            obs=pd.DataFrame(cell_meta))
+    
+    adata.obsm["X_pca"] = pca
+    if n_pcs > pca.shape[1]:
+        n_pcs = pca.shape[1]
+    sc.pp.neighbors(adata, n_neighbors=int(n_neighbors), n_pcs=int(n_pcs))
+
+    if if_diffmap:
+        sc.tl.diffmap(adata)
+        sc.pp.neighbors(adata, n_neighbors=int(n_neighbors), use_rep='X_diffmap')
+
+    if cluster_col is None:
+        sc.tl.leiden(adata, resolution=resolution)
+        cluster_col = "leiden"
+        
+    sc.tl.paga(adata, groups=cluster_col)
+    
+    if init_cluster is not None:
+      adata.uns['iroot'] = np.flatnonzero(adata.obs[cluster_col] == init_cluster)[0]
+      sc.tl.dpt(adata,neighbors_key = "neighbors")
+      
+    return(adata)
+
+
+def PAGA_prune(adata,distances,connectivities,cluster_col):
+    adata.obsp["distances"] = distances
+    adata.obsp["connectivities"] = connectivities
+    
+    # adata.uns["prune_neighbors"] = adata.uns["neighbors"].copy()
+    # adata.uns["prune_neighbors"]["distances_key"] = "prune_distances"
+    # adata.uns["prune_neighbors"]["connectivities_key"] = "prune_connectivities"
+    
+    # orig_paga = adata.uns["paga"].copy()
+    
+    sc.tl.paga(adata, groups=cluster_col,neighbors_key = "neighbors")
+    
+    # adata.uns["orig_paga"] = orig_paga
+    
+    return(adata)
+  
+def PAGA_dpt(adata,init_cluster,cluster_col,neighbors_key = "neighbors",nn_thresh = 5):
+    adata.uns['iroot'] = np.flatnonzero(adata.obs[cluster_col] == init_cluster)[0]
+    
+    flag = (adata.obsp["connectivities"] > 0).sum(axis = 0)
+    if(flag.sum() > 0):
+      adata = adata[flag >= nn_thresh,]
+    
+    sc.tl.dpt(adata,neighbors_key = neighbors_key)
+    
+    return(adata)

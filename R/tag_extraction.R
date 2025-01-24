@@ -44,8 +44,13 @@ seq_config = function(protocol,toolkit,
     barcode_len = 14
     UMI_len = 9
   }
+  else if(protocol == "other"){
+    if(is.null(adapter)){
+      stop("Please sepcify the adapter, left_flank, right_flank for your protocol to search and extract the adapter sequence!")
+    }
+  }
   else{
-    warning("The protocol you specified is not incorporated yet, please specify your config!")
+    stop("The protocol you specified is not incorporated yet, please specify your config!")
   }
 
   out = list(adapter,left_flank,right_flank,drop_adapter,barcode_len,UMI_len)

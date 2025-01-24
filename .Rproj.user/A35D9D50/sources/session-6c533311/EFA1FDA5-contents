@@ -1,0 +1,70 @@
+PAGA_prune_by_clone = function(cell_embedding,clone_embedding,cell_meta,init_cluster,
+                      cell_k = 50,clone_k = 10,
+                      clone_col = "clone",cluster_col = "cluster",cluster_cell_thresh = 30){
+  if(nrow(cell_embedding) != nrow(cell_meta)){
+    stop("The rows of cell_embedding should correspond to the rows of cell_meta!")
+  }
+  if(is.null(rownames(clone_embedding))){
+    stop("The rownames of the clone_embedding should correspond to the content in the clone_col in cell_meta!")
+  }
+
+  ### filter out cells which are not considered in clone embedding
+  cell_meta = cell_meta %>% mutate_at(c(clone_col,cluster_col),as.character)
+  cell_meta = cell_meta %>% filter_at(clone_col,~. %in% rownames(clone_embedding))
+  cluster_cell_count = table(cell_meta[,cluster_col])
+  clusters = names(cluster_cell_count[cluster_cell_count >= cluster_cell_thresh])
+  cell_meta = cell_meta %>% filter_at(cluster_col,~. %in% clusters)
+
+  cell_embedding = cell_embedding[rownames(cell_meta),,drop = FALSE]
+
+  # return(list(cell_embedding,cell_meta))
+  ### Build PAGA trajectory for all cells
+  unprune = PAGA_wrapper(pca = cell_embedding,cell_meta = cell_meta,cluster_col = cluster_col,if_diffmap = FALSE,
+                          n_neighbors = cell_k)
+
+  # return(unprune)
+  ### Prune PAGA trajectory based on clone embedding
+  cell_c = unprune$obsp["connectivities"]
+  cell_c_filter = clone_prune_cell_nn(cell_c,clone_embedding,cell_meta,clone_k,clone_col)
+  cell_d_filter = sparse_exp(cell_c_filter)
+  #cell_d = unprune$obsp["distances"]
+  #cell_d_filter = clone_prune_cell_nn(cell_d,clone_embedding,cell_meta,clone_k,clone_col)
+
+  # return(list(cell_c,cell_c_filter))
+  pruned = unprune$copy()
+  pruned = PAGA_prune(pruned,cell_d_filter,cell_c_filter,cluster_col)
+  return(list(unprune,pruned))
+  unprune = PAGA_dpt(unprune,init_cluster = init_cluster,cluster_col = cluster_col)
+  pruned = PAGA_dpt(pruned,init_cluster = init_cluster,cluster_col = cluster_col)
+  return(list(unprune,pruned))
+}
+
+clone_prune_cell_nn = function(cell_nn,clone_embedding,cell_meta,clone_k,clone_col = "clone"){
+  cell_meta = cell_meta %>% mutate_at(clone_col,as.character)
+  ### build cell knn network
+  cell_knn_flat = as.data.frame(summary(cell_nn))
+  colnames(cell_knn_flat) = c("cell1","cell2","dist")
+
+  ### build clone knn network
+  clone_knn_flat = as.data.frame(knn_flat(clone_embedding,clone_k,symmetric = TRUE,if_self = TRUE))
+  colnames(clone_knn_flat) = c("clone1","clone2","dist")
+  clone_knn_flat = clone_knn_flat %>% mutate(clone1 = rownames(clone_embedding)[clone1],
+                                             clone2 = rownames(clone_embedding)[clone2])
+
+  ### check if cell knn match the clone knn
+  cell_meta = as.data.frame(cell_meta)
+  cell_clone_knn_id = cbind(cell_meta[cell_knn_flat[,1],clone_col],cell_meta[cell_knn_flat[,2],clone_col])
+
+  flag1 = unique(paste(clone_knn_flat[,1],clone_knn_flat[,2],sep = ","))
+  flag2 = paste(cell_clone_knn_id[,1],cell_clone_knn_id[,2],sep = ",")
+  flag = flag2 %in% flag1
+  cat(sum(flag)," edges out of ", length(flag2), " edges get preserved after pruned by clone network with k as ",clone_k, "\n")
+
+  cell_knn_flat_filter = cell_knn_flat
+  cell_knn_flat_filter[!flag,]$dist = 0
+
+  cell_nn_filter = drop0(long2sparse(cell_knn_flat_filter,row_names_from = "cell1",
+                                     col_names_from = "cell2",values_from = "dist",
+                                     unique_rows = 1:nrow(cell_nn),unique_cols = 1:ncol(cell_nn)))
+  return(cell_nn_filter)
+}

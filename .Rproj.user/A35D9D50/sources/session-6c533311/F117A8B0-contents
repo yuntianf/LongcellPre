@@ -1,0 +1,95 @@
+prcrv_plot = function(prcrv,embedding_name = "dm"){
+  dm = as.data.frame(prcrv[[embedding_name]])
+  colnames(dm) = paste("Dim",1:ncol(dm),sep = "_")
+
+  dm$lambda=prcrv$lambda
+
+  coord = as.data.frame(prcrv$s)
+  colnames(coord) = paste("Dim",1:ncol(coord),sep = "_")
+
+  out = ggplot()+
+    geom_point(data = dm,aes(x = Dim_1,y = Dim_2,color = lambda),size = 2)+
+    geom_line(data = coord,aes(x = Dim_1,y = Dim_2),linewidth = 0.5)+
+    scale_color_viridis_c(name = "pseudotime")+
+    theme_classic()+
+    theme(text = element_text(size = 18))
+
+  return(out)
+}
+
+curvature = function(n,bin = 0.1){
+  start = -bin*(n-1)/2
+  end = -start
+  out = seq(start,end,bin)
+
+  return(out)
+}
+
+multi_curvatures = function(n,bin = 0.1){
+  out = lapply(n,function(x){
+    curvature(x,bin)
+  })
+  return(unlist(out))
+}
+
+connectivity_coord = function(coord,connectivity,dims = c(1,2)){
+  if(nrow(coord) != nrow(connectivity)){
+    stop("The number of points in the coord and the connectivity doesn't match!")
+  }
+  if(length(dims) != 2){
+    stop("This function is for plot and only 2 dimnesions are allowed.")
+  }
+  coord = as.data.frame(coord[,dims,drop = FALSE])
+  coord$id = 1:nrow(coord)
+
+  connectivity = as.data.frame(summary(connectivity))
+  connectivity = left_join(connectivity,coord,by = c("i" = "id"))
+  connectivity = left_join(connectivity,coord,by = c("j" = "id"))
+  colnames(connectivity)[(ncol(connectivity)-3):ncol(connectivity)] = c("i_x","i_y","j_x","j_y")
+
+  return(connectivity)
+}
+
+dimplot = function(embedding, annot, color_by, connectivity = NULL, label = TRUE,
+                   dims = c(1, 2),connectivity_thresh = 0.1, ...) {
+  embedding = embedding[, dims, drop = FALSE]
+  embedding = cbind(embedding, annot[rownames(embedding), ] %>% dplyr::select_at(color_by))
+
+  out = ggplot() +
+    geom_point(data = embedding,
+               mapping = aes(x = !!sym(colnames(embedding)[1]), y = !!sym(colnames(embedding)[2])),
+               color = "lightgrey",size = 0.1,alpha = 0.5)+
+    geom_point(data = embedding %>% filter_at(color_by,~!is.na(.)),
+               mapping = aes(x = !!sym(colnames(embedding)[1]), y = !!sym(colnames(embedding)[2]),
+                             color = !!sym(color_by)), ...) +
+    theme_classic() +
+    theme(text = element_text(size = 15))+
+    guides(colour = guide_legend(override.aes = list(size=5)))
+
+  if (label) {
+    center_coord = embedding %>%
+      group_by_at(color_by) %>%
+      summarise(across(c(colnames(embedding)[1:2]), ~ median(.x, na.rm = TRUE)), count = n())
+
+    if (!is.null(connectivity)) {
+      edge_coord = connectivity_coord(center_coord, connectivity,dims = c(2,3))
+      edge_coord = edge_coord %>% filter(x >= connectivity_thresh)
+      out = out +
+        geom_segment(data = edge_coord,
+                     aes(x = i_x, y = i_y, xend = j_x, yend = j_y, linewidth = x), color = "lightgrey")+
+        geom_point(data = center_coord,
+                   aes(x = !!sym(colnames(embedding)[1]), y = !!sym(colnames(embedding)[2]), size = log(count)))
+    }
+
+    out = out +
+      ggrepel::geom_text_repel(data = center_coord,
+                               mapping = aes_string(x = colnames(embedding)[1], y = colnames(embedding)[2], label = color_by),
+                               color = "black")
+  }
+
+  return(out)
+}
+
+scatterpie = function(scatter_coord,composition,connectivity = NULL,label = TRUE){
+
+}

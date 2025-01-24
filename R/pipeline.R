@@ -188,7 +188,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
                             minimap_bed_path = NULL,
                             work_dir = "./",
                             # parameters for tag extraction
-                            window = 10,step = 2,tag_len = 55,
+                            window = 10,step = 2,
                             left_flank = 0, right_flank = 0, drop_adapter = FALSE,
                             polyA_bin = 20,polyA_base_count = 15,polyA_len = 10,
                             # parameters for barcode match
@@ -231,7 +231,8 @@ reads_extract_bc = function(fastq_path,barcode_path,
                         # parameters to extract the tag region
                         toolkit = toolkit,protocol = protocol,adapter = adapter,
                         window = window,step = step,
-                        left_flank = left_flank, right_flank = right_flank, drop_adapter = drop_adapter,
+                        left_flank = left_flank, right_flank = right_flank,
+                        drop_adapter = drop_adapter,
                         polyA_bin = polyA_bin,
                         polyA_base_count = polyA_base_count,polyA_len = polyA_len,
                         # parameters for barcode match
@@ -520,6 +521,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
   neceParam = list(data = bc_out,qual = qual,
                    dir = file.path(work_dir,"out"),
                    gene_bed = gene_bed,gtf = gtf,
+                   to_isoform = to_isoform,
                    cores = cores)
   Param = paramMerge(umi_count_corres,neceParam,...)
   uc = do.call(umi_count_corres,Param)
