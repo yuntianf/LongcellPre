@@ -200,7 +200,6 @@ reads_extract_bc = function(fastq_path,barcode_path,
                             # parameters for reads extraction
                             bedtools = "bedtools",
                             map_qual = 30,end_flank = 200,
-                            splice_site_bin = 2,
                             #parameters for barcode filtering
                             mean_edit_thresh = 1.5,
                             # parameters for cache
