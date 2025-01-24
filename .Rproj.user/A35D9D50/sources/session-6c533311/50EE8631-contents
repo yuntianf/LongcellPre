@@ -16,7 +16,7 @@ argparse = function(){
   p$add_argument("-f", "--fastq", help="The path for the input fastq file",required =TRUE)
   p$add_argument("-b", "--barcode", help="The path for the cell barcode whitelist",required =TRUE)
   p$add_argument("-t", "--toolkit", help="The toolkit used in sequencing, should be 5 or 3",choices = c("5","3"),required =TRUE)
-  p$add_argument("-p", "--protocol", help="The sequencing protocol, ex. '10X', 'VISIUM', 'Curio'",
+  p$add_argument("-q", "--protocol", help="The sequencing protocol, ex. '10X', 'VISIUM', 'Curio'",
                  choices = c("10X","VISIUM","Curio","other"),default = "10X")
 
   ##### reference related args
@@ -43,51 +43,12 @@ argparse = function(){
   p$add_argument("--samtools", help="The path of the samtools", default = "samtools")
   p$add_argument("--bedtools", help="The path of the bedtools", default = "bedtools")
 
-  if(!full_help){
-    ### Unnecessary parameters
-    ##### tag extraction
-    p$add_argument("--window", help=NULL, default = 10)
-    p$add_argument("--step", help=NULL, default = 2)
-    p$add_argument("--left_flank", help=NULL, default = 0)
-    p$add_argument("--right_flank", help=NULL, default = 0)
-    p$add_argument("--drop_adapter", help=NULL, default = FALSE)
-    p$add_argument("--polyA_bin", help=NULL, default = 20)
-    p$add_argument("--polyA_base_count", help=NULL, default = 15)
 
-    # parameters for barcode match
-    p$add_argument("--barcode_len", help=NULL, default = 16)
-    p$add_argument("--batch", help=NULL, default = 100)
-    p$add_argument("--top", help=NULL, default = 5)
-    p$add_argument("--cos_thresh", help=NULL, default = 0.25)
-    p$add_argument("--edit_thresh", help=NULL, default = 3)
-    p$add_argument("--UMI_len", help=NULL, default = 10)
-    p$add_argument("--UMI_flank", help=NULL, default = 1)
-    p$add_argument("--mean_edit_thresh", help=NULL, default = 1.5)
-
-    # parameters for reads extraction
-    p$add_argument("--map_qual", help=NULL, default = 30)
-    p$add_argument("--end_flank", help=NULL, default = 200)
-
-    # parameters for rerun
-    p$add_argument("--force_barcode_match", help=NULL, default = FALSE)
-    p$add_argument("--force_map", help=NULL, default = FALSE)
-    p$add_argument("--force_isoform_extract", help=NULL, default = FALSE)
-
-    # parameters for reads filtering
-    p$add_argument("--splice_site_thresh", help=NULL, default = 10)
-    p$add_argument("--filter_only_intron", help=NULL, default = TRUE)
-
-    # parameters for mapping reads to isoform
-    p$add_argument("--mid_offset_thresh", help=NULL, default = 3)
-    p$add_argument("--overlap_thresh", help=NULL, default = 0)
-
-    if(help){
+  if(help & !full_help){
       message("Here only shows the necessary parameters to run this pipeline. To get a full list of parameters, please run Rscript RunLongcellPre.R -h --full")
-    }
   }
 
-
-  if (full_help){
+  if (full_help | !help){
     ### Unnecessary parameters
     ##### tag extraction
     p$add_argument("--window", help="The kmer size used to search for adapter sequence", default = 10)
@@ -134,6 +95,5 @@ argparse = function(){
 }
 
 args = argparse()
-print(args)
 
 cache = do.call(RunLongcellPre, args)

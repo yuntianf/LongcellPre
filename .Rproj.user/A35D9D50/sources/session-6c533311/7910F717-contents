@@ -168,7 +168,6 @@ bamGeneCoverage = function(bam,gene_range_bed,outdir,bedtools = "bedtools"){
 #' @param force_map flag to force to redo the mapping step
 #' @param force_isoform_extract flag to force to redo the isoform extraction step
 #' @import Longcellsrc
-#' @importFrom BSgenome getBSgenome
 #' @importFrom peakRAM peakRAM
 #' @importFrom magrittr %>%
 #' @importFrom dplyr group_by
@@ -304,7 +303,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
 
     start_time <- Sys.time()
     mem = peakRAM::peakRAM({
-      genome<-BSgenome::getBSgenome(genome_name)
+      genome<-load_genome(genome_name)
       reads = reads_extraction(bam_path = file.path(work_dir,"bam/polish.bam"),
                                gene_bed = gene_bed,genome = genome,
                                toolkit = toolkit,
@@ -443,7 +442,7 @@ umi_count_corres = function(data,qual,dir,gene_bed,genome_name,gtf = NULL,
   saveResult(count,file.path(dir,"iso_count.txt"))
 
   ### transform the count to fastq
-  genome = BSgenome::getBSgenome(args[2])
+  genome = load_genome(genome_name)
   reads = isoformCount2Reads(count,genome,gene_bed,file.path(dir,"polish.fq.gz"))
 
   qname = as.character(reads@id)

@@ -9,6 +9,6 @@ License: MIT
 Encoding: UTF-8
 LazyData: true
 biocViews: BSgenome, GenomicFeatures, IRanges, Rsamtools, GenomicRanges, txdbmaker
-Imports: Matrix, NameNeedle, dbscan, dplyr, future, future.apply, igraph, parallel, peakRAM, spgs, stringi, tidyr, Rcpp, valr, argparse
+Imports: Matrix, NameNeedle, dbscan, dplyr, future, future.apply, igraph, parallel, peakRAM, spgs, stringi, tidyr, Rcpp, valr, argparse, BSgenome, GenomicFeatures, IRanges, Rsamtools, GenomicRanges, txdbmaker
 LinkingTo: Rcpp, RcppEigen
 RoxygenNote: 7.2.1
