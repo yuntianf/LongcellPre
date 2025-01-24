@@ -8,8 +8,8 @@ Description: Generate single cell isoform expression matrix from bam alignment.
 License: MIT
 Encoding: UTF-8
 LazyData: true
-biocViews: BSgenome, GenomicFeatures, IRanges, Rsamtools, GenomicRanges, txdbmaker
-Imports: Matrix, NameNeedle, dbscan, dplyr, future, future.apply, igraph, parallel, peakRAM, spgs, stringi, tidyr, Rcpp, valr, argparse, BSgenome, GenomicFeatures, IRanges, Rsamtools, GenomicRanges, txdbmaker, BiocManager
+biocViews: BSgenome, GenomicFeatures, IRanges, Rsamtools, GenomicRanges, txdbmaker, ShortRead,Biostrings
+Imports: Matrix, NameNeedle, dbscan, dplyr, future, future.apply, igraph, parallel, peakRAM, spgs, stringi, stringr, tidyr, Rcpp, valr, argparse, BSgenome, GenomicFeatures, IRanges, Rsamtools, GenomicRanges, txdbmaker, BiocManager, ShortRead,Biostrings
 LinkingTo: Rcpp, RcppEigen
 Suggests: BSgenome.Mmusculus.UCSC.mm39, BSgenome.Hsapiens.UCSC.hg38
 RoxygenNote: 7.2.1
