@@ -9,8 +9,7 @@ isoform_correct_filter(
   filter_ratio,
   strand,
   split = "|",
-  sep = ",",
-  splice_site_thresh = 10
+  sep = ","
 )
 }
 \arguments{

@@ -17,7 +17,6 @@ reads_extract_bc(
   work_dir = "./",
   window = 10,
   step = 2,
-  tag_len = 55,
   left_flank = 0,
   right_flank = 0,
   drop_adapter = FALSE,

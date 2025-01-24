@@ -27,7 +27,7 @@ saveIsoMat(
 \item{count_col}{The name of the column which stores the isoform count}
 }
 \description{
-save the output from "cells_genes_isos_count" into 
+save the output from "cells_genes_isos_count" into
 cellRanger outpur format, for both gene quantification matrix and isoform quantification
 matrix.
 }

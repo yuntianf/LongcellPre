@@ -4,7 +4,7 @@
 \alias{isoform_size_filter}
 \title{isoform_size_filter}
 \usage{
-isoform_size_filter(isoforms, size, ratio = 0.1)
+isoform_size_filter(isoforms, size, ratio = 0.1, ...)
 }
 \arguments{
 \item{isoforms}{A string vector, each string represent a corrected isoform by collapse of reads
@@ -16,4 +16,24 @@ A numeric vector to indicating whether the cluster is filtered out or not
 \description{
 Filter out singletons and small clusters which are not likely to be
 correctly clustered, given the distribution of cluster size within a series of isoform clusters.
+}
+\details{
+#' @title isoform_size_filter
+#'
+#' @description Filter out singletons and small clusters which are not likely to be
+#' correctly clustered, given the distribution of cluster size.
+#' @param size A vector to store the size for each cluster.
+#' @param ratio The estimated frequency for UMIs which are enriched of sequencing errors and
+#' couldn't be clustered correctly and become singletons
+#' @return A numeric vector to indicating whether the cluster is filtered out or not
+isoform_size_filter <- function(isoforms,size,ratio = 0.1){
+  cluster = isoform_dis_cluster(isoforms,thresh = 10,eps = 10)
+
+  isoform_size = as.data.frame(cbind(cluster,size))
+  colnames(isoform_size) = c("cluster","size")
+
+  isoform_size = isoform_size %>% group_by(cluster) %>%
+    mutate(weight = size_filter_error(size,ratio))
+  return(isoform_size$weight)
+}
 }

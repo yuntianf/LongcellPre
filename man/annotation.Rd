@@ -8,7 +8,7 @@ annotation(
   gtf_path = NULL,
   gene_bed_path = NULL,
   work_dir = "./",
-  overwrite = TRUE,
+  overwrite = FALSE,
   bed_chr_col = "chr",
   bed_start_col = "start",
   bed_end_col = "end",

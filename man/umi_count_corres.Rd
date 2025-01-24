@@ -9,6 +9,7 @@ umi_count_corres(
   qual,
   dir,
   gene_bed,
+  genome_name,
   gtf = NULL,
   bar = "barcode",
   gene = "gene",

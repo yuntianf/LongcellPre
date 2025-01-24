@@ -30,9 +30,8 @@ extractReadSeq = function(seq,start,end,exon_bins){
 #' @param strand The strand of the sequence to be extracted.
 #' @param split The character to seperate the exons in the isoform string.
 #' @param sep The character to seperate the start and end position of an exon in the isoform string.
-#' @import BSgenome
+#' @importFrom BSgenome getSeq
 #' @importFrom Biostrings DNAStringSet
-#' @importFrom Biostrings reverseComplement
 #' @return A string of the extracted sequence.
 extractSeq = function(genome,chr,isoforms,strand,split = "|",sep = ","){
   exons_list = lapply(isoforms,function(x){
@@ -52,26 +51,24 @@ extractSeq = function(genome,chr,isoforms,strand,split = "|",sep = ","){
 
   reads = DNAStringSet(unlist(reads))
   if(strand == "-"){
-    reads = reverseComplement(reads)
+    reads = Biostrings::reverseComplement(reads)
   }
   return(reads)
 }
 
 #' @title isoformCount2ReadsForGene
-#' @description Transform the isoform quantification into corresponding read sequences.
+#' @description Transform the isoform quantification into corresponding read sequences for a gene.
 #' @param mat The dataframe which records the isoform quantification, should have at least two columns, including
 #' the isoform and the count of the isoform, there can also be other columns about the meta data, which would be saved
 #' in the read name.
-#' @param genome The name of the genome, will be used to retrieve the genome object from BSgenome.
-#' @param chr The chromosome index of the sequence to be extracted.
-#' @param isoforms A string vector to indicate the isoforms.
-#' @param strand The strand of the sequence to be extracted.
-#' @param split The character to seperate the exons in the isoform string.
-#' @param sep The character to seperate the start and end position of an exon in the isoform string.
-#' @import BSgenome
-#' @importFrom Biostrings DNAStringSet
-#' @importFrom Biostrings reverseComplement
-#' @return A string of the extracted sequence.
+#' @inheritParams extractSeq
+#' @param isoform_col The name of the column which records the isoforms
+#' @param count_col The name of the column which records the read count
+#' @param name_col The name of the columns which record the meta information of each read. The information from those columns would be saved in the read name.
+#' @param quality Currently the quality for the UMI-collapsed reads are all set to the highest as '~'.
+#' @importFrom dplyr filter_at across everything cur_column
+#' @importFrom ShortRead ShortReadQ
+#' @return A ShortReadQ object storing the fastq file.
 isoformCount2ReadsForGene = function(mat,genome,chr,strand,
                                      isoform_col = "isoform",count_col = "count",name_col = c("cell","gene","polyA"),
                                      quality = "~",...){
@@ -107,6 +104,17 @@ isoformCount2ReadsForGene = function(mat,genome,chr,strand,
   return(fastq)
 }
 
+
+#' @title isoformCount2Read
+#' @description Transform the isoform quantification into corresponding read sequences for multiple genes.
+#' @inheritParams isoformCount2ReadsForGene
+#' @param gene_bed The gene bed annotation
+#' @param filename The name of the output fastq file
+#' @param gene_col,chr_col,strand_col The name of the column which stores the gene name/chromosome/gene strand.
+#' @importFrom dplyr filter_at
+#' @importFrom ShortRead writeFastq
+#' @return A ShortReadQ object storing the fastq file.
+#' @export
 isoformCount2Read = function(mat,genome,gene_bed,filename,
                         gene_col = "gene",
                         chr_col = "chr",strand_col = "strand",
@@ -116,7 +124,6 @@ isoformCount2Read = function(mat,genome,gene_bed,filename,
   gene_uniq = unique(unlist(mat[,gene_col]))
 
   reads = lapply(gene_uniq,function(x){
-    print(x)
     sub_mat = mat %>% filter_at(gene_col,~. == x)
 
     sub_bed = gene_bed %>% filter_at(gene_col,~. ==x)
@@ -137,6 +144,12 @@ isoformCount2Read = function(mat,genome,gene_bed,filename,
   return(reads)
 }
 
+#' @title extractAnnotFromQname
+#' @description Extract the annotation for each read from the read name.
+#' @param qname A vector of string which stores the read name.
+#' @param annot The prefix of the annotation to be extracted
+#' @importFrom stringr str_extract
+#' @return A vector of string which stores the annotations.
 extractAnnotFromQname = function(qname,annot = "cell"){
   regrex = paste(c("(?<=",annot,"=)[^|]+"),collapse = "")
   out = str_extract(qname, "(?<=cell=)[^|]+")

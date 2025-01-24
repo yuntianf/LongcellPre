@@ -4,7 +4,15 @@
 \alias{site_recover}
 \title{site_recover}
 \usage{
-site_recover(start, end, mid = NULL, sites = NULL, sep = ",", split = "|")
+site_recover(
+  start,
+  end,
+  mid = NULL,
+  sites = NULL,
+  flank = 5,
+  sep = ",",
+  split = "|"
+)
 }
 \arguments{
 \item{start}{A numeric value indicating start position of reads within the UMI cluster}
