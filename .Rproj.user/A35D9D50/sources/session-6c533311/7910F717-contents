@@ -356,7 +356,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
 #' @export
 #'
 
-umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
+umi_count_corres = function(data,qual,dir,gene_bed,genome_name,gtf = NULL,
                             # parameter for umi count
                             bar = "barcode",gene = "gene",
                             isoform = "isoform",polyA = "polyA",
@@ -441,6 +441,16 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
   count = as.data.frame(do.call(rbind,count))
   count = count %>% dplyr::select(cell,gene,isoform,count,polyA)
   saveResult(count,file.path(dir,"iso_count.txt"))
+
+  ### transform the count to fastq
+  genome = BSgenome::getBSgenome(args[2])
+  reads = isoformCount2Reads(count,genome,gene_bed,file.path(dir,"polish.fq.gz"))
+
+  qname = as.character(reads@id)
+  annot = extractAnnotFromQname(qname,"cell")
+  qname = cbind(qname,annot)
+
+  saveResult(qname,file.path(dir,"read_annot.csv"))
   return(0)
 }
 
@@ -520,6 +530,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
   neceParam = list(data = bc_out,qual = qual,
                    dir = file.path(work_dir,"out"),
                    gene_bed = gene_bed,gtf = gtf,
+                   genome_name = genome_name,
                    to_isoform = to_isoform,
                    cores = cores)
   Param = paramMerge(umi_count_corres,neceParam,...)
