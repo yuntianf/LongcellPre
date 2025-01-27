@@ -68,6 +68,7 @@ extractSeq = function(genome,chr,isoforms,strand,split = "|",sep = ","){
 #' @param quality Currently the quality for the UMI-collapsed reads are all set to the highest as '~'.
 #' @importFrom dplyr filter_at across everything cur_column
 #' @importFrom ShortRead ShortReadQ
+#' @importFrom Biostrings BStringSet
 #' @return A ShortReadQ object storing the fastq file.
 isoformCount2ReadsForGene = function(mat,genome,chr,strand,
                                      isoform_col = "isoform",count_col = "count",name_col = c("cell","gene","polyA"),
