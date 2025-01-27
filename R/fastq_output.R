@@ -141,7 +141,7 @@ isoformCount2Reads = function(mat,genome,gene_bed,filename,
   })
 
   reads = Reduce("append",reads)
-  writeFastq(reads, filename, compress = TRUE)
+  # writeFastq(reads, filename, compress = TRUE)
   return(reads)
 }
 
