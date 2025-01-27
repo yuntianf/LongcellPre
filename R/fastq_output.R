@@ -105,7 +105,7 @@ isoformCount2ReadsForGene = function(mat,genome,chr,strand,
 }
 
 
-#' @title isoformCount2Read
+#' @title isoformCount2Reads
 #' @description Transform the isoform quantification into corresponding read sequences for multiple genes.
 #' @inheritParams isoformCount2ReadsForGene
 #' @param gene_bed The gene bed annotation
@@ -115,7 +115,7 @@ isoformCount2ReadsForGene = function(mat,genome,chr,strand,
 #' @importFrom ShortRead writeFastq
 #' @return A ShortReadQ object storing the fastq file.
 #' @export
-isoformCount2Read = function(mat,genome,gene_bed,filename,
+isoformCount2Reads = function(mat,genome,gene_bed,filename,
                         gene_col = "gene",
                         chr_col = "chr",strand_col = "strand",
                         isoform_col = "isoform",count_col = "count",
