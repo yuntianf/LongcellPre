@@ -81,6 +81,8 @@ argparse = function(){
     p$add_argument("--force_barcode_match", help="The flag to indicate if the cell barcode match should be rerun if there already exist the output files", default = FALSE)
     p$add_argument("--force_map", help="The flag to indicate if the read mapping should be rerun if there already exist the output files", default = FALSE)
     p$add_argument("--force_isoform_extract", help="The flag to indicate if the isoform extraction should be rerun if there already exist the output files", default = FALSE)
+    p$add_argument("--force_UMI_dedup", help="The flag to indicate if the UMI deduplication should be rerun if there already exist the output files", default = FALSE)
+    p$add_argument("--force_fastq_out", help="The flag to indicate if the fastq output should be rerun if there already exist the output files", default = FALSE)
 
     # parameters for reads filtering
     p$add_argument("--splice_site_thresh", help="If the number of the appearance for a splice site is lower than this threshold, reads with this splice site would be filtered out", default = 10)

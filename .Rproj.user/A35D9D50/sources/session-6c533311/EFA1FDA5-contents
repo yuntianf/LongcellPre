@@ -24,10 +24,10 @@ PAGA_prune_by_clone = function(cell_embedding,clone_embedding,cell_meta,init_clu
 
   # return(unprune)
   ### Prune PAGA trajectory based on clone embedding
-  cell_c = unprune$obsp["connectivities"]
+  cell_c = unprune$obsp[["connectivities"]]
   cell_c_filter = clone_prune_cell_nn(cell_c,clone_embedding,cell_meta,clone_k,clone_col)
   # cell_d_filter = sparse_exp(cell_c_filter)
-  # cell_d = unprune$obsp["distances"]
+  cell_d = unprune$obsp[["distances"]]
   cell_d_filter = clone_prune_cell_nn(cell_d,clone_embedding,cell_meta,clone_k,clone_col)
 
   # return(list(cell_c,cell_c_filter))

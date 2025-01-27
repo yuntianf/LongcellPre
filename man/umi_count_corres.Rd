@@ -30,7 +30,9 @@ umi_count_corres(
   gtf_start_col = "start",
   gtf_end_col = "end",
   gtf_iso_col = "transname",
-  cores = 1
+  cores = 1,
+  force_UMI_dedup = FALSE,
+  force_fastq_out = FALSE
 )
 }
 \arguments{
@@ -71,6 +73,10 @@ umi_count_corres(
 \item{gtf_iso_col}{the name of the column which stores isoform name in the gtf.}
 
 \item{cores}{The number of cores required for parallel}
+
+\item{force_UMI_dedup}{flag to force to redo the UMI deduplication step}
+
+\item{force_fastq_out}{flag to force to redo the fastq output step}
 }
 \description{
 A wrapper function to include all steps in the UMI deduplication.

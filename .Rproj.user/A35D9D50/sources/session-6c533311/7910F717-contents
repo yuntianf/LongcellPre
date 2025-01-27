@@ -346,6 +346,8 @@ reads_extract_bc = function(fastq_path,barcode_path,
 #' isoform correction, isoform imputation and quantification.
 #'
 #' @param data The first output dataframe from reads_extract_bc.
+#' @param force_UMI_dedup flag to force to redo the UMI deduplication step
+#' @param force_fastq_out flag to force to redo the fastq output step
 #' @inheritParams umi_count
 #' @inheritParams cells_genes_isos_count
 #' @inheritParams genes_distribute
@@ -369,88 +371,121 @@ umi_count_corres = function(data,qual,dir,gene_bed,genome_name,gtf = NULL,
                             gtf_gene_col = "gene",gtf_start_col = "start",
                             gtf_end_col = "end",gtf_iso_col = "transname",
                             #parameter for parallel
-                            cores = 1){
-  cores = coreDetect(cores)
-  data_split = genes_distribute(data,cores,gene)
-
-  gene_strand = unique(gene_bed[,c(bed_gene_col,bed_strand_col)])
+                            cores = 1,
+                            # parameters for cache
+                            force_UMI_dedup = FALSE,
+                            force_fastq_out = FALSE){
 
   cat("Start to do UMI deduplication:\n")
-  start_time <- Sys.time()
-  mem = peakRAM::peakRAM({
-    count = future_lapply(data_split,function(x){
-      sub_count = umi_count(x,qual,gene_strand,
-                            bar = bar,gene = gene,
-                            isoform = isoform,polyA = polyA,
-                            sim_thresh = sim_thresh,
-                            split = split,sep = sep,
-                            splice_site_thresh = splice_site_thresh,
-                            verbose = verbose)
 
-      if(length(sub_count) == 0 || nrow(sub_count) == 0){
-        return(NULL)
-      }
-      return(sub_count)
-    },future.packages = c("Longcellsrc"),future.seed=TRUE)
-  })
-  end_time <- Sys.time()
-  duration = end_time-start_time
-  log = sprintf('UMI deduplication took %.2f %s\n', duration, units(duration))
-  cat(log,"\n")
-  print(mem[,2:4])
-
-  if(to_isoform){
-    if(!is.null(gtf)){
-      cat("Start to do isoform alignment:")
-      start_time <- Sys.time()
-      mem = peakRAM::peakRAM({
-      count_mat = future_lapply(count,function(x){
-        if(is.null(x)){
-          return(NULL)
-        }
-        sub_count_mat = cells_genes_isos_count(x,gtf,
-                                               thresh = mid_offset_thresh,
-                                               overlap_thresh = overlap_thresh,
-                                               filter_only_intron = filter_only_intron,
-                                               gtf_gene_col = gtf_gene_col,
-                                               gtf_iso_col = gtf_iso_col,
-                                               gtf_start_col = gtf_start_col,
-                                               gtf_end_col = gtf_end_col,
-                                               split = split,sep = sep)
-        if(length(sub_count_mat) == 0 || nrow(sub_count_mat) == 0){
-          return(NULL)
-        }
-        return(sub_count_mat)
-      },future.packages = c("Longcellsrc"),future.seed=TRUE)
-        count_mat = as.data.frame(do.call(dplyr::bind_rows,count_mat))
-        #count_mat[is.na(count_mat)] = 0
-        #saveResult(count_mat,file.path(dir,"iso_count_mat.txt"))
-        saveIsoMat(count_mat,dir)
-      })
-      end_time <- Sys.time()
-      duration = end_time-start_time
-      log = sprintf('Isoform alignment took %.2f %s\n', duration, units(duration))
-      cat(log,"\n")
-      print(mem[,2:4])
-    }
-    else{
-      warning("The gtf annotation is not provided for the isoform imputation, will skip this step!")
+  do_ud_flag = TRUE
+  if(file.exists(file.path(dir,"iso_count.txt"))){
+    if(!force_UMI_dedup){
+      warning("The UMI deduplication output already exist,
+              if you want to redo it please set force_UMI_dedup to be TRUE")
+      count = read.table(file.path(dir,"iso_count.txt"),header = TRUE,sep = "\t")
+      do_ud_flag = FALSE
     }
   }
 
-  count = as.data.frame(do.call(rbind,count))
-  count = count %>% dplyr::select(cell,gene,isoform,count,polyA)
-  saveResult(count,file.path(dir,"iso_count.txt"))
+  if(do_ud_flag){
+    cores = coreDetect(cores)
+    data_split = genes_distribute(data,cores,gene)
+
+    gene_strand = unique(gene_bed[,c(bed_gene_col,bed_strand_col)])
+
+
+    start_time <- Sys.time()
+    mem = peakRAM::peakRAM({
+      count = future_lapply(data_split,function(x){
+        sub_count = umi_count(x,qual,gene_strand,
+                              bar = bar,gene = gene,
+                              isoform = isoform,polyA = polyA,
+                              sim_thresh = sim_thresh,
+                              split = split,sep = sep,
+                              splice_site_thresh = splice_site_thresh,
+                              verbose = verbose)
+
+        if(length(sub_count) == 0 || nrow(sub_count) == 0){
+          return(NULL)
+        }
+        return(sub_count)
+      },future.packages = c("Longcellsrc"),future.seed=TRUE)
+    })
+    end_time <- Sys.time()
+    duration = end_time-start_time
+    log = sprintf('UMI deduplication took %.2f %s\n', duration, units(duration))
+    cat(log,"\n")
+    print(mem[,2:4])
+
+    if(to_isoform){
+      if(!is.null(gtf)){
+        cat("Start to do isoform alignment:")
+        start_time <- Sys.time()
+        mem = peakRAM::peakRAM({
+          count_mat = future_lapply(count,function(x){
+            if(is.null(x)){
+              return(NULL)
+            }
+            sub_count_mat = cells_genes_isos_count(x,gtf,
+                                                   thresh = mid_offset_thresh,
+                                                   overlap_thresh = overlap_thresh,
+                                                   filter_only_intron = filter_only_intron,
+                                                   gtf_gene_col = gtf_gene_col,
+                                                   gtf_iso_col = gtf_iso_col,
+                                                   gtf_start_col = gtf_start_col,
+                                                   gtf_end_col = gtf_end_col,
+                                                   split = split,sep = sep)
+            if(length(sub_count_mat) == 0 || nrow(sub_count_mat) == 0){
+              return(NULL)
+            }
+            return(sub_count_mat)
+          },future.packages = c("Longcellsrc"),future.seed=TRUE)
+          count_mat = as.data.frame(do.call(dplyr::bind_rows,count_mat))
+          #count_mat[is.na(count_mat)] = 0
+          #saveResult(count_mat,file.path(dir,"iso_count_mat.txt"))
+          saveIsoMat(count_mat,dir)
+        })
+        end_time <- Sys.time()
+        duration = end_time-start_time
+        log = sprintf('Isoform alignment took %.2f %s\n', duration, units(duration))
+        cat(log,"\n")
+        print(mem[,2:4])
+      }
+      else{
+        warning("The gtf annotation is not provided for the isoform imputation, will skip this step!")
+      }
+    }
+
+    count = as.data.frame(do.call(rbind,count))
+    count = count %>% dplyr::select(cell,gene,isoform,count,polyA)
+    saveResult(count,file.path(dir,"iso_count.txt"))
+  }
 
   ### transform the count to fastq
-  genome = load_genome(genome_name)
-  reads = isoformCount2Reads(count,genome,gene_bed,file.path(dir,"UMI_collapsed.fq.gz"))
+  cat("Start to output the UMI collapsed fastq:\n")
 
-  qname = as.character(reads@id)
-  annot = extractAnnotFromQname(qname,"cell")
-  qname = cbind(qname,annot)
+  do_fq_flag = TRUE
+  if(file.exists(file.path(dir,"UMI_collapsed.fq.gz")) &
+     file.exists(file.path(dir,"reads_annot.csv"))){
+    if(!force_fastq_out){
+      warning("The UMI collapsed fastq already exist,
+              if you want to redo it please set force_fastq_out to be TRUE")
+      do_fq_flag = FALSE
+    }
+  }
 
-  saveResult(qname,file.path(dir,"reads_annot.csv"))
+  if(do_fq_flag){
+    genome = load_genome(genome_name)
+    reads = isoformCount2Reads(count,genome,gene_bed,file.path(dir,"UMI_collapsed.fq.gz"))
+
+    qname = as.character(reads@id)
+    annot = extractAnnotFromQname(qname,"cell")
+    qname = cbind(qname,annot)
+
+    saveResult(qname,file.path(dir,"reads_annot.csv"))
+  }
+
   return(0)
 }
 

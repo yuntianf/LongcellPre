@@ -113,7 +113,7 @@ isoformCount2ReadsForGene = function(mat,genome,chr,strand,
 #' @param filename The name of the output fastq file
 #' @param gene_col,chr_col,strand_col The name of the column which stores the gene name/chromosome/gene strand.
 #' @importFrom dplyr filter_at
-#' @importFrom ShortRead writeFastq
+#' @importFrom ShortRead writeFastq append
 #' @return A ShortReadQ object storing the fastq file.
 #' @export
 isoformCount2Reads = function(mat,genome,gene_bed,filename,
