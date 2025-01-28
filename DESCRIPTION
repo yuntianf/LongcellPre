@@ -13,4 +13,4 @@ Imports: Matrix, NameNeedle, dbscan, dplyr, future, future.apply, igraph, parall
 LinkingTo: Rcpp, RcppEigen
 Suggests: BSgenome.Mmusculus.UCSC.mm39, BSgenome.Hsapiens.UCSC.hg38
 RoxygenNote: 7.2.1
-Additional_repositories: https://bioconductor.org/packages/3.17/bioc
+Additional_repositories: https://bioconductor.org/packages/3.20/bioc/
