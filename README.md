@@ -12,12 +12,12 @@ You can install `LongcellPre` by `devtools`:
 devtools::install_github("yuntianf/Longcellsrc")
 devtools::install_github("yuntianf/LongcellPre",dependencies=TRUE)
 ```
-
+The singularity image for this package is under construction.
 
 ## Workflow
 The simplist way to run `LongcellPre` is to apply:
 ```
-Rscript ./LongcellPre/exec/RunLongcellPre.R -f ${FASTQ} -b ${BARCODES} -t ${TOOLKIT} -q ${PROTOCOL} -g ${GENOME} -n ${GENOME_NAME} --gtf ${GTF} -o ${OUTDIR}
+Rscript ./LongcellPre/exec/RunLongcellPre.R -f FASTQ−b{FASTQ} -b {BARCODES} -t TOOLKIT−q{TOOLKIT} -q {PROTOCOL} -g GENOME−n{GENOME} -n {GENOME_NAME} --gtf GTF−o{GTF} -o {OUTDIR}
 ```
 The basic parameters for this pipeline are shown here:
 ```
@@ -65,6 +65,36 @@ We provide a demo data with 200 cells and 3 genes. This data is a subset of the 
 https://www.dropbox.com/scl/fo/21tw8rrkaancani0fzq3t/AKNHUk06onR2c2dYuB4wXWY?rlkey=1zikug28qr9ziw2cdsgelrm9p&st=ypm9m00i&dl=0
 
 For a more detailed explanation of steps for LongcellPre, please refer to https://github.com/yuntianf/LongcellPre/blob/main/vignettes/LongcellPre.ipynb
+
+## output
+The output of the LongcellPre pipeline includes:
+```
+├── annotation
+│   ├── exon_gtf.rds: The exon annotation for each gene given the gtf annotation, stored in RDS format.
+│   ├── exon_gtf.txt: The exon annotation for each gene given the gtf annotation, stored in tsv format.
+│   ├── gene_bed.rds: The annotation non-overlapped exon bins for each gene given the gtf annotation, stored in RDS format.
+│   ├── gene_bed.txt: The annotation non-overlapped exon bins for each gene given the gtf annotation, stored in tsv format.
+├── bam
+│   ├── polish.bam: The mapped bam from reads with adapters trimmed.
+│   └── polish.bam.bai
+├── BarcodeMatch
+│   ├── adapterNeedle.txt: The summary statistics for the Needleman score of the kmer adapter sequence in each reads compared to its know sequence.
+│   ├── BarcodeMatchIso.txt: 
+│   └── BarcodeMatch.txt
+├── out
+│   ├── gene: The sparse matrix for the cell by gene matrix.
+│   │   ├── barcodes.tsv
+│   │   ├── features.tsv
+│   │   └── matrix.mtx
+│   ├── iso_count.txt: The isoform quantification in each cell (without isoform annotation).
+│   ├── isoform: The sparse matrix for the cell by isoform matrix.
+│   │   ├── barcodes.tsv
+│   │   ├── features.tsv
+│   │   └── matrix.mtx
+│   ├── reads_annot.csv: The read annotation for the UMI collapsed fastq file.
+│   └── UMI_collapsed.fq.gz: The polished reads after UMI collapsion. This can be input for other tools.
+└── polish.fq.gz
+```
 
 ## Citation
 
