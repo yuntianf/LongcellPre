@@ -153,6 +153,23 @@ bamGeneCoverage = function(bam,gene_range_bed,outdir,bedtools = "bedtools"){
   return(noncover)
 }
 
+#' @title clean_file
+
+#' @description clean the intermediate files for LongcellPre pipeline.
+#' @param dir The output path for the LongcellPre pipeline
+clean_file = function(dir){
+  if(file.exists(file.path(dir,"annotation/cover.bed"))){
+    file.remove(file.path(dir,"annotation/cover.bed"))
+  }
+  if(file.exists(file.path(dir,"annotation/noncover.bed"))){
+    file.remove(file.path(dir,"annotation/noncover.bed"))
+  }
+  if(file.exists(file.path(dir,"BarcodeMatch/BarcodeMatch.txt"))){
+    file.remove(file.path(dir,"BarcodeMatch/BarcodeMatch.txt"))
+  }
+  return(NULL)
+}
+
 #' @title reads_extract_bc
 #'
 #' @description A wrapper function to include extractTagBc, fastqMap and reads_extraction
@@ -571,6 +588,8 @@ RunLongcellPre = function(fastq_path,barcode_path,
   Param = paramMerge(umi_count_corres,neceParam,...)
   uc = do.call(umi_count_corres,Param)
 
+  # clean cache files
+  cache = clean_file(work_dir)
 
   print("LongcellPre pipeline finished!")
 }
