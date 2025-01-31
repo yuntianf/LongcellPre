@@ -92,7 +92,7 @@ The output of the LongcellPre pipeline includes:
 │   │   ├── features.tsv
 │   │   └── matrix.mtx
 │   ├── reads_annot.csv: The read annotation for the UMI collapsed fastq file.
-│   └── UMI_collapsed.fq.gz: The polished reads after UMI collapsion.
+│   └── UMI_collapsed.fq.gz: The polished reads after UMI collapsion. This can be input for other tools.
 └── polish.fq.gz
 ```
 
