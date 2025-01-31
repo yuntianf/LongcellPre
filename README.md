@@ -79,20 +79,20 @@ The output of the LongcellPre pipeline includes:
 │   └── polish.bam.bai
 ├── BarcodeMatch
 │   ├── adapterNeedle.txt: The summary statistics for the Needleman score of the kmer adapter sequence in each reads compared to its know sequence.
-│   ├── BarcodeMatchIso.txt
+│   ├── BarcodeMatchIso.txt: 
 │   └── BarcodeMatch.txt
 ├── out
-│   ├── gene
+│   ├── gene: The sparse matrix for the cell by gene matrix.
 │   │   ├── barcodes.tsv
 │   │   ├── features.tsv
 │   │   └── matrix.mtx
-│   ├── iso_count.txt
-│   ├── isoform
+│   ├── iso_count.txt: The isoform quantification in each cell (without isoform annotation).
+│   ├── isoform: The sparse matrix for the cell by isoform matrix.
 │   │   ├── barcodes.tsv
 │   │   ├── features.tsv
 │   │   └── matrix.mtx
-│   ├── reads_annot.csv
-│   └── UMI_collapsed.fq.gz
+│   ├── reads_annot.csv: The read annotation for the UMI collapsed fastq file.
+│   └── UMI_collapsed.fq.gz: The polished reads after UMI collapsion.
 └── polish.fq.gz
 ```
 
