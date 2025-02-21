@@ -17,7 +17,7 @@ The singularity image for this package is under construction.
 ## Workflow
 The simplist way to run `LongcellPre` is to apply:
 ```
-Rscript ./LongcellPre/exec/RunLongcellPre.R -f FASTQ−b{FASTQ} -b {BARCODES} -t TOOLKIT−q{TOOLKIT} -q {PROTOCOL} -g GENOME−n{GENOME} -n {GENOME_NAME} --gtf GTF−o{GTF} -o {OUTDIR}
+Rscript ./LongcellPre/exec/RunLongcellPre.R -f {FASTQ} -b {BARCODES} -t TOOLKIT−q{TOOLKIT} -q {PROTOCOL} -g GENOME−n{GENOME} -n {GENOME_NAME} --gtf GTF−o{GTF} -o {OUTDIR}
 ```
 The basic parameters for this pipeline are shown here:
 ```
