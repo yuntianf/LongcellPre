@@ -9,7 +9,7 @@ coreDetect = function(cores){
   max_cores = parallel::detectCores()
   if(cores > max_cores){
     warning(paste(c("Distributed number of cores exceed the maximum, will use all ",
-                    max_core, " cores for parallization!"),sep = ""))
+                    max_cores, " cores for parallization!"),sep = ""))
     cores = max_cores
   }
   return(cores)
