@@ -91,6 +91,9 @@ argparse = function(){
     # parameters for mapping reads to isoform
     p$add_argument("--mid_offset_thresh", help="When mapping a read to an annotated isoform, the maximum allowable offset for an internal splice site.", default = 3)
     p$add_argument("--overlap_thresh", help="When mapping a read to an annotated isoform, the read must have a minimum overlap ratio with the annotated isoform", default = 0)
+
+    # parameters for verbose
+    p$add_argument("--verbose",help = "The flag to indicate the information print of umi count process", default = FALSE)
   }
 
   return(p$parse_args())
