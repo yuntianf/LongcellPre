@@ -5,8 +5,8 @@
 #'
 #' @param data A dataframe
 #' @param filename The output filename
-saveResult = function(data,filename){
-  write.table(data,file  = filename,sep = "\t",quote = FALSE,row.names = FALSE)
+saveResult = function(data,filename,sep = "\t"){
+  write.table(data,file  = filename,sep = sep,quote = FALSE,row.names = FALSE)
 }
 
 

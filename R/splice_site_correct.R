@@ -9,7 +9,8 @@
 #' @param splice_site_thresh The minimum number of occurance for a splice site to be preserved.
 #' @return A dataframe, the first and the last column stores the start and end position of each read,
 #' the middle columns store if each read has the splicing sites
-splice_site_table <- function(isoforms,polyA,strand,
+splice_site_table <- function(isoforms,
+                              #polyA,strand,
                               split = "|",sep = ",",
                               splice_site_thresh = 10){
   out = splice_site_table_cpp(isoforms,split,sep,splice_site_thresh)
@@ -19,23 +20,26 @@ splice_site_table <- function(isoforms,polyA,strand,
 
   out = as.data.frame(do.call(cbind,out))
   if(ncol(out) > 3){
+    end_thresh= 5
     mid_sites = as.numeric(colnames(out)[3:(ncol(out)-1)])
     out = lapply(1:nrow(out),function(i){
       x = unlist(out[i,])
       id = as.numeric(x["id"])
       start = as.numeric(x["start"])
       end = as.numeric(x["end"])
-      if(polyA[id] == 0){
-        x[as.character(mid_sites[mid_sites > end | mid_sites < start])] = NA
-      }
-      else{
-        if(strand == "+"){
-          x[as.character(mid_sites[mid_sites < start])] = NA
-        }
-        else if(strand == "-"){
-          x[as.character(mid_sites[mid_sites > end])] = NA
-        }
-      }
+      x[as.character(mid_sites[(mid_sites > (end-end_thresh)) | (mid_sites < (start+end_thresh))])] = NA
+
+      #if(polyA[id] == 0){
+      #  x[as.character(mid_sites[(mid_sites > (end+end_thresh)) | (mid_sites < (start-end_thresh))])] = NA
+      #}
+      #else{
+      #  if(strand == "+"){
+      #    x[as.character(mid_sites[mid_sites < (start-end_thresh)])] = NA
+      #  }
+      #  else if(strand == "-"){
+      #    x[as.character(mid_sites[mid_sites > (end + end_thresh)])] = NA
+      #  }
+      #}
       return(x)
     })
     out = as.data.frame(do.call(rbind,out))
@@ -513,6 +517,9 @@ cells_isoform_correct <- function(cells,cluster,gene_isoform,polyA){
   if(ncol(gene_isoform) > 2){
     splice_sites = colnames(gene_isoform)[2:(ncol(gene_isoform)-1)]
     data = cells_mid_correct(cells,cluster,gene_isoform,polyA)
+    if(nrow(data) == 0){
+      return(NULL)
+    }
     data$isoform <- apply(data,1,function(x){
       site_recover(x["start"],x["end"],x["mid"],splice_sites)
     })
@@ -520,6 +527,9 @@ cells_isoform_correct <- function(cells,cluster,gene_isoform,polyA){
   else{
     splice_sites = NULL
     data = cells_nomid_correct(cells,cluster,gene_isoform,polyA)
+    if(nrow(data) == 0){
+      return(NULL)
+    }
     data$isoform <- apply(data,1,function(x){
       site_recover(x["start"],x["end"])
     })

@@ -500,7 +500,7 @@ umi_count_corres = function(data,qual,dir,gene_bed,genome_name,gtf = NULL,
     annot = extractAnnotFromQname(qname,"cell")
     qname = cbind(qname,annot)
 
-    saveResult(qname,file.path(dir,"reads_annot.csv"))
+    saveResult(qname,file.path(dir,"reads_annot.csv"),sep = ",")
   }
 
   return(0)

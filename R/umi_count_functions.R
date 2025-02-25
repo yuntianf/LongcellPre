@@ -13,8 +13,7 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
                             split = "|",sep = ","){
 
   gene_isoform = splice_site_table(gene_cells_cluster$isoform,
-                                   gene_cells_cluster$polyA,
-                                   strand,
+                                   # gene_cells_cluster$polyA,strand,
                                    split,sep,splice_site_thresh=0)
   #return(gene_isoform)
   if(length(gene_isoform) == 0 || nrow(gene_isoform) == 0){
@@ -72,8 +71,7 @@ gene_umi_count <- function(cell_exon,qual,strand,bar = "barcode",
     cell_exon$polyA = as.numeric(cell_exon$polyA)
 
     gene_isoform = splice_site_table(cell_exon$isoform,
-                                     cell_exon$polyA,
-                                     strand,
+                                     # cell_exon$polyA,strand,
                                      split,sep,splice_site_thresh)
     #return(gene_isoform)
     if(length(gene_isoform) == 0 || nrow(gene_isoform) == 0){
@@ -110,7 +108,7 @@ gene_umi_count <- function(cell_exon,qual,strand,bar = "barcode",
     })
 
     gene_cells_cluster = as.data.frame(do.call(rbind,gene_cells_cluster))
-    #return(gene_cells_cluster)
+    # return(gene_cells_cluster)
     #cat("Clustering for UMI finished!\n")
     filter_ratio = mean(c(sum(qual[qual$needle < sim_thresh,"count"]),
                           sum(qual[qual$needle < sim_thresh+1,"count"])))/sum(qual$count)
