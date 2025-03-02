@@ -64,7 +64,7 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
 gene_umi_count <- function(cell_exon,qual,strand,bar = "barcode",
                       isoform = "isoform",polyA = "polyA",
                       sim_thresh = NULL,split = "|",sep = ",",
-                      splice_site_thresh = 10,verbose = FALSE){
+                      splice_site_thresh = 3,verbose = FALSE){
     colnames(cell_exon)[which(colnames(cell_exon) == bar)] = "cell"
     colnames(cell_exon)[which(colnames(cell_exon) == isoform)] = "isoform"
     colnames(cell_exon)[which(colnames(cell_exon) == polyA)] = "polyA"
@@ -132,7 +132,7 @@ umi_count <- function(cell_exon,qual, gene_strand,
                       bar = "barcode",gene = "gene",
                       isoform = "isoform",polyA = "polyA",
                       sim_thresh = NULL, split = "|",sep = ",",
-                      splice_site_thresh = 10,verbose = FALSE){
+                      splice_site_thresh = 3,verbose = FALSE){
     genes <- unique(cell_exon[,gene])
     genes_umi_count <- lapply(genes,function(i){
       if(verbose){
