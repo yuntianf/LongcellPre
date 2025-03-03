@@ -54,16 +54,16 @@ intron_only = function(reads,gtf,gtf_start_col = "start",gtf_end_col = "end",
 #' the read could align to.
 #' @export
 iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.25,
-                      end_bias = 200,
-                      gtf_gene_col = "gene",gtf_iso_col = "transname",
-                      gtf_start_col = "start",gtf_end_col = "end",
-                      sep = ",",split = "|"){
+                             end_bias = 200,
+                             gtf_gene_col = "gene",gtf_iso_col = "transname",
+                             gtf_start_col = "start",gtf_end_col = "end",
+                             sep = ",",split = "|"){
   sub_gtf = gtf %>% filter_at(gtf_gene_col,~.==gene) %>%
     arrange_at(c(gtf_iso_col,gtf_start_col,gtf_end_col))
 
   sub_gtf_iso = sub_gtf %>% group_by_at(gtf_iso_col) %>%
     reframe(iso = paste(paste(!!sym(gtf_start_col),
-                                !!sym(gtf_end_col),sep = sep),collapse = split))
+                              !!sym(gtf_end_col),sep = sep),collapse = split))
   sub_gtf_iso = as.data.frame(sub_gtf_iso)
 
   transcripts_uniq = unique(transcripts)
@@ -77,17 +77,26 @@ iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.25,
 
   transcripts_iso_corres = as.data.frame(transcripts_iso_corres)
   colnames(transcripts_iso_corres) = c("isoform","transname","dis","overlap")
-  transcripts_iso_corres = transcripts_iso_corres[,c("isoform","transname","overlap","dis")]
+  # transcripts_iso_corres = transcripts_iso_corres[,c("isoform","transname","overlap","dis")]
+  # return(transcripts_iso_corres)
   suppressWarnings({
     transcripts_iso_corres = transcripts_iso_corres %>% group_by(isoform) %>%
-                           summarise_all(~.[dis == min(dis)]) %>%
-                           dplyr::select(isoform,transname,overlap) %>%
-                           arrange(isoform,-overlap)
+      summarise_all(~.[dis == min(dis)]) %>%
+      dplyr::select(isoform,transname,overlap) %>%
+      arrange(isoform,-overlap)
   })
   transcripts_iso_corres = as.data.frame(transcripts_iso_corres)
+  transcripts_iso_corres = transcripts_iso_corres %>%
+    mutate(diff = iso_full_dis_v(transcripts_uniq[isoform + 1],sub_gtf_iso[transname+1,"iso"]),
+           isoform = transcripts_uniq[isoform+1],
+           transname = sub_gtf_iso[transname+1,gtf_iso_col]) %>%
+    arrange(isoform,diff)
+
+  transcripts_iso_corres = transcripts_iso_corres[!duplicated(transcripts_iso_corres$isoform),]
   #return(transcripts_iso_corres)
-  transcripts_iso_corres$isoform = transcripts_uniq[transcripts_iso_corres$isoform+1]
-  transcripts_iso_corres$transname = sub_gtf_iso[transcripts_iso_corres$transname+1,gtf_iso_col]
+  #transcripts_iso_corres$isoform = transcripts_uniq[transcripts_iso_corres$isoform+1]
+  #transcripts_iso_corres$transname = sub_gtf_iso[transcripts_iso_corres$transname+1,gtf_iso_col]
+
 
   return(transcripts_iso_corres)
 }
@@ -224,15 +233,16 @@ cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
       sub_data$transname = "unknown"
     }
     else{
-      iso_index = iso_index %>% group_by_at(transcript_col) %>%
-        summarise(transname = list(transname),overlap = list(overlap))
+      #iso_index = iso_index %>% group_by_at(transcript_col) %>%
+      #  summarise(transname = list(transname),overlap = list(overlap))
       sub_data = left_join(sub_data,iso_index,by = transcript_col)
       sub_data$transname[sapply(sub_data$transname,function(i) is.null(i))] = "unknown"
     }
 
-    sub_out = iso_count_impute(sub_data,cell_col = cell_col,
-                               iso_col = "transname",overlap_col = "overlap",
-                               count_col = count_col)
+    sub_out = sub_data %>% group_by(cell,transname) %>% summarise(count = sum(count))
+    #sub_out = iso_count_impute(sub_data,cell_col = cell_col,
+    #                           iso_col = "transname",overlap_col = "overlap",
+    #                           count_col = count_col)
     sub_out$gene = i
     return(sub_out)
   })
