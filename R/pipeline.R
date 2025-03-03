@@ -223,15 +223,25 @@ reads_extract_bc = function(fastq_path,barcode_path,
                             force_barcode_match = FALSE,
                             force_map = FALSE,
                             force_isoform_extract = FALSE,
+                            force_rerun = FALSE,
                             # parameters for parallel
                             cores = 1){
   cores = coreDetect(cores)
 
+  if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt")) &
+     file.exists(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))){
+    if(!force_rerun){
+      warning("The barcode match and isoform extraction result already exist,
+              if you want to redo everything please set force_rerun to be TRUE")
+      reads_bc = read.table(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt"),header = TRUE,sep = "\t")
+      qual = read.table(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"),header = TRUE,sep = "\t")
+      return(list(reads_bc,qual))
+    }
+  }
   # barcode match
   cat("Start to do barcode match:\n")
   do_bc_flag = TRUE
-  if((file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt")) |
-      file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt"))) &
+  if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt")) &
      file.exists(file.path(work_dir,"polish.fq.gz"))){
     if(!force_barcode_match){
       warning("The barcode match output already exist,
