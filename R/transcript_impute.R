@@ -39,7 +39,7 @@ intron_only = function(reads,gtf,gtf_start_col = "start",gtf_end_col = "end",
 #' @param sep The character to split the start and end position for each exon in the isoform.
 #' @param split The character to split the exons in the isoform
 #' @importFrom GenomicRanges GRanges findOverlaps width pintersect
-#' @import IRanges
+#' @importFrom S4Vectors queryHits subjectHits
 #' @return A numerical number to denote the difference.
 iso_full_dis = function(read1,read2,split = "|",sep = ","){
   read1 = read2bins(read1,split = "|",sep = ",")
