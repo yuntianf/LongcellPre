@@ -124,7 +124,7 @@ isoformCount2Reads = function(mat,genome,gene_bed,filename,
                         quality = "~",...){
   gene_uniq = unique(unlist(mat[,gene_col]))
 
-  reads = lapply(gene_uniq,function(x){
+  reads = future_lapply(gene_uniq,function(x){
     sub_mat = mat %>% filter_at(gene_col,~. == x)
 
     sub_bed = gene_bed %>% filter_at(gene_col,~. ==x)
@@ -138,7 +138,7 @@ isoformCount2Reads = function(mat,genome,gene_bed,filename,
                                            quality = quality,...)
 
     return(gene_reads)
-  })
+  },future.seed=TRUE)
 
   reads = Reduce("append",reads)
   writeFastq(reads, filename, compress = TRUE)
