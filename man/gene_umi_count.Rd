@@ -14,7 +14,7 @@ gene_umi_count(
   sim_thresh = NULL,
   split = "|",
   sep = ",",
-  splice_site_thresh = 10,
+  splice_site_thresh = 3,
   verbose = FALSE
 )
 }

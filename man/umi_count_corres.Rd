@@ -18,7 +18,7 @@ umi_count_corres(
   sim_thresh = NULL,
   split = "|",
   sep = ",",
-  splice_site_thresh = 10,
+  splice_site_thresh = 3,
   verbose = FALSE,
   bed_gene_col = "gene",
   bed_strand_col = "strand",

@@ -33,6 +33,37 @@ intron_only = function(reads,gtf,gtf_start_col = "start",gtf_end_col = "end",
 }
 
 
+#' @title iso_full_dis
+#' @description calculate the difference in the alignment between two reads in base pair
+#' @param read1,read2 A string or matrix to record the exons in a read
+#' @param sep The character to split the start and end position for each exon in the isoform.
+#' @param split The character to split the exons in the isoform
+#' @importFrom GenomicRanges GRanges
+#' @importFrom GenomicRanges findOverlaps
+#' @importFrom GenomicRanges width
+#' @importFrom GenomicRanges pintersect
+#' @importFrom GenomicRanges queryHits
+#' @importFrom GenomicRanges subjectHits
+#' @return A numerical number to denote the difference.
+iso_full_dis = function(read1,read2,split = "|",sep = ","){
+  read1 = read2bins(read1,split = "|",sep = ",")
+  read2 = read2bins(read2,split = "|",sep = ",")
+
+  bins1 <- GRanges(seqnames = "chr1", ranges = IRanges(start = read1$start, end = read1$end))
+  bins2 <- GRanges(seqnames = "chr1", ranges = IRanges(start = read2$start, end = read2$end))
+
+  overlaps <- findOverlaps(bins1, bins2)
+  overlap_lengths <- width(pintersect(bins1[queryHits(overlaps)], bins2[subjectHits(overlaps)]))
+  total_difference <- sum(width(bins1)) + sum(width(bins2)) - 2 * sum(overlap_lengths)
+
+  return(total_difference)
+}
+
+#' @title iso_full_dis_v
+#' @description The vectorized version of the iso_full_dis function
+#' @inheritParams iso_full_dis
+iso_full_dis_v <- Vectorize(iso_full_dis, c("read1", "read2"))
+
 
 #' @title iso_corres
 #' @description map the reads to the annotated isoforms for one gene
@@ -81,7 +112,7 @@ iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.25,
   # return(transcripts_iso_corres)
   suppressWarnings({
     transcripts_iso_corres = transcripts_iso_corres %>% group_by(isoform) %>%
-      summarise_all(~.[dis == min(dis)]) %>%
+      filter(dis == min(dis)) %>%
       dplyr::select(isoform,transname,overlap) %>%
       arrange(isoform,-overlap)
   })
@@ -204,7 +235,7 @@ cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
   gene_uniq = unique(data[,gene_col])
 
   out = lapply(gene_uniq,function(i){
-    #print(i)
+    print(i)
     sub_data = data %>% filter_at(gene_col,~.==i)
     sub_gtf = gtf %>% filter_at(gtf_gene_col,~.==i) %>%
       arrange_at(c(gtf_iso_col,gtf_start_col,gtf_end_col))
@@ -239,7 +270,7 @@ cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
       sub_data$transname[sapply(sub_data$transname,function(i) is.null(i))] = "unknown"
     }
 
-    sub_out = sub_data %>% group_by(cell,transname) %>% summarise(count = sum(count))
+    sub_out = sub_data %>% group_by(cell,transname) %>% summarise(count = sum(count),.groups = "drop")
     #sub_out = iso_count_impute(sub_data,cell_col = cell_col,
     #                           iso_col = "transname",overlap_col = "overlap",
     #                           count_col = count_col)

@@ -4,7 +4,7 @@
 \alias{saveResult}
 \title{saveResult}
 \usage{
-saveResult(data, filename)
+saveResult(data, filename, sep = "\\t")
 }
 \arguments{
 \item{data}{A dataframe}

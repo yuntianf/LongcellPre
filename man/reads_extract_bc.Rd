@@ -44,6 +44,7 @@ reads_extract_bc(
   force_barcode_match = FALSE,
   force_map = FALSE,
   force_isoform_extract = FALSE,
+  force_rerun = FALSE,
   cores = 1
 )
 }

@@ -4,14 +4,7 @@
 \alias{splice_site_table}
 \title{splice_site_table}
 \usage{
-splice_site_table(
-  isoforms,
-  polyA,
-  strand,
-  split = "|",
-  sep = ",",
-  splice_site_thresh = 10
-)
+splice_site_table(isoforms, split = "|", sep = ",", splice_site_thresh = 10)
 }
 \arguments{
 \item{split}{The character to seperate different exons in the isoform representation.}
