@@ -230,7 +230,8 @@ reads_extract_bc = function(fastq_path,barcode_path,
   # barcode match
   cat("Start to do barcode match:\n")
   do_bc_flag = TRUE
-  if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt")) &
+  if((file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt")) |
+      file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatch.txt"))) &
      file.exists(file.path(work_dir,"polish.fq.gz"))){
     if(!force_barcode_match){
       warning("The barcode match output already exist,

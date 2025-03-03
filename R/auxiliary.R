@@ -205,9 +205,19 @@ isos_len = function(isos,...){
 #' @return A dataframe with two columns, the first column records the start of each exon, the second records
 #' the end position.
 read2bins = function(read,sep = ",",split = "|"){
-  sites = Longcellsrc::isoform2sites(read,split = split,sep = sep)
-  len = length(sites)
-  bins = as.data.frame(cbind(sites[seq(1,len,2)],sites[seq(2,len,2)]))
+  if(class(read) == "character"){
+    sites = Longcellsrc::isoform2sites(read,split = split,sep = sep)
+    len = length(sites)
+    bins = as.data.frame(cbind(sites[seq(1,len,2)],sites[seq(2,len,2)]))
+  }
+  else if((sum(class(read) == "matrix") > 0) | (sum(class(read) == "data.frame") > 0)){
+    if(ncol(read) == 2){
+      bins = as.data.frame(read)
+    }
+    else{
+      stop("There should be no more that 2 columns for the matrix to denote a read!")
+    }
+  }
   colnames(bins) = c("start","end")
   return(bins)
 }

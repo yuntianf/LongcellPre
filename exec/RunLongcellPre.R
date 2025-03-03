@@ -85,7 +85,7 @@ argparse = function(){
     p$add_argument("--force_fastq_out", help="The flag to indicate if the fastq output should be rerun if there already exist the output files", default = FALSE)
 
     # parameters for reads filtering
-    p$add_argument("--splice_site_thresh", help="If the number of the appearance for a splice site is lower than this threshold, reads with this splice site would be filtered out", default = 10)
+    p$add_argument("--splice_site_thresh", help="If the number of the appearance for a splice site is lower than this threshold, reads with this splice site would be filtered out", default = 3)
     p$add_argument("--filter_only_intron", help="A bool flag to indicate if reads only introns should be preserved", default = TRUE)
 
     # parameters for mapping reads to isoform
