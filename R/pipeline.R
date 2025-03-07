@@ -645,7 +645,6 @@ RunLongcellPre = function(fastq_path,barcode_path,
   neceParam = list(data = bc_out,qual = qual,
                    dir = file.path(work_dir,"out"),
                    gene_bed = gene_bed,gtf = gtf,
-                   genome_name = genome_name,
                    to_isoform = to_isoform,
                    cores = cores)
   Param = paramMerge(umi_count_corres,neceParam,...)
