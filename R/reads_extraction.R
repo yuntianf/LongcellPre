@@ -19,10 +19,16 @@
 #'
 
 readBam = function(bam_path,chr,start,end, strand, map_qual = 30){
+  if (!strand %in% c("+", "-")) {
+    stop("The strand of mapping should be either '+' or '-'!")
+  }
+
   bamFile <- BamFile(bam_path)
 
   gr <- GRanges(seqnames = chr,
                 ranges = IRanges(start = start, end = end))
+  seqlevels(gr) <- seqlevels(bamFile)
+
   if(strand == "+"){
     param <- ScanBamParam(mapqFilter = map_qual,flag=scanBamFlag(isUnmappedQuery=FALSE,isMinusStrand = FALSE),
                           what = c('qname','pos',"cigar","seq"),which = gr)
@@ -31,11 +37,13 @@ readBam = function(bam_path,chr,start,end, strand, map_qual = 30){
     param <- ScanBamParam(mapqFilter = map_qual,flag=scanBamFlag(isUnmappedQuery=FALSE,isMinusStrand = TRUE),
                           what = c('qname','pos',"cigar","seq"),which = gr)
   }
-  else{
-    stop("The strand of mapping should be either + or -!")
-  }
-  seqlevels(param) = seqlevels(bamFile)
+
   aln <- scanBam(bamFile, param = param)
+  if (length(aln[[1]]$qname) == 0) {
+    warning("No alignments found in the specified region.")
+    return(NULL)
+  }
+
   return(aln[[1]])
 }
 
