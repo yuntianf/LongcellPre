@@ -12,6 +12,7 @@
 #' @importFrom Rsamtools BamFile
 #' @importFrom Rsamtools ScanBamParam
 #' @importFrom Rsamtools scanBamFlag
+#' @importFrom Rsamtools seqlevels
 #' @importFrom GenomicRanges GRanges
 #' @importFrom IRanges IRanges
 #' @return return a list including read names, start positions, cigars and the sequences for all reads
@@ -19,6 +20,7 @@
 
 readBam = function(bam_path,chr,start,end, strand, map_qual = 30){
   bamFile <- BamFile(bam_path)
+
   gr <- GRanges(seqnames = chr,
                 ranges = IRanges(start = start, end = end))
   if(strand == "+"){
@@ -32,7 +34,7 @@ readBam = function(bam_path,chr,start,end, strand, map_qual = 30){
   else{
     stop("The strand of mapping should be either + or -!")
   }
-
+  seqlevels(param) = seqlevels(bamFile)
   aln <- scanBam(bamFile, param = param)
   return(aln[[1]])
 }

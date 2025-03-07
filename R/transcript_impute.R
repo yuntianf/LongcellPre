@@ -267,6 +267,7 @@ cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
     }
 
     sub_out = sub_data %>% group_by(cell,transname) %>% summarise(count = sum(count),.groups = "drop")
+    colnames(sub_out) = c("cell","isoform","count")
     #sub_out = iso_count_impute(sub_data,cell_col = cell_col,
     #                           iso_col = "transname",overlap_col = "overlap",
     #                           count_col = count_col)
