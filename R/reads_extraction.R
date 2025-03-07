@@ -41,7 +41,6 @@ readBam = function(bam_path,chr,start,end, strand, map_qual = 30){
   aln <- scanBam(bamFile, param = param)
   if (length(aln[[1]]$qname) == 0) {
     warning("No alignments found in the specified region.")
-    return(NULL)
   }
 
   return(aln[[1]])
@@ -115,6 +114,7 @@ gene_reads_extraction = function(bam_path,gene_bed,genome,
 
   #start_time <- Sys.time()
   bam = readBam(bam_path,chr = chr,start = start,end = end,strand = strand,map_qual = map_qual)
+
   #end_time <- Sys.time()
   #print(paste("readbam:",end_time - start_time))
 

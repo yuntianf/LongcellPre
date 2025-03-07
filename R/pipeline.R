@@ -237,6 +237,10 @@ reads_extract_bc = function(fastq_path,barcode_path,
       qual = read.table(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"),header = TRUE,sep = "\t")
       return(list(reads_bc,qual))
     }
+    else{
+      unlink(file.path(work_dir,"BarcodeMatch/*"), recursive = TRUE)
+      unlink(file.path(work_dir,"bam/*"), recursive = TRUE)
+    }
   }
   # barcode match
   cat("Start to do barcode match:\n")
@@ -386,7 +390,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
 #' @export
 #'
 
-umi_count_corres = function(data,qual,dir,gene_bed,genome_name,gtf = NULL,
+umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
                             # parameter for umi count
                             bar = "barcode",gene = "gene",
                             isoform = "isoform",polyA = "polyA",
@@ -401,8 +405,7 @@ umi_count_corres = function(data,qual,dir,gene_bed,genome_name,gtf = NULL,
                             #parameter for parallel
                             cores = 1,
                             # parameters for cache
-                            force_UMI_dedup = FALSE,
-                            force_fastq_out = FALSE){
+                            force_UMI_dedup = FALSE){
 
   cat("Start to do UMI deduplication:\n")
 
@@ -490,6 +493,28 @@ umi_count_corres = function(data,qual,dir,gene_bed,genome_name,gtf = NULL,
     saveResult(count,file.path(dir,"iso_count.txt"))
   }
 
+  return(count)
+}
+
+
+#' @title UMI_consensus_out
+#'
+#' @description Output the reads after UMI consensus into fastq and map it to the genome.
+#'
+#' @param umi_count The umi count output from umi_count_corres.
+#' @param force_fastq_out flag to force to reoutpupt the consensused fastq
+#' @param force_fastq_out flag to force to remap the consensused fastq
+#' @inheritParams isoformCount2Reads
+#' @inheritParams fastqMap
+#' @export
+#'
+UMI_consensus_out = function(umi_count,dir,
+                             genome_path,genome_name,
+                             gene_bed,
+                             minimap2 = "minimap2",samtools = "samtools",
+                             minimap_bed_path = NULL,
+                             cores = 1,
+                             force_fastq_out = FALSE,force_map = FALSE){
   ### transform the count to fastq
   cat("Start to output the UMI collapsed fastq:\n")
 
@@ -504,14 +529,41 @@ umi_count_corres = function(data,qual,dir,gene_bed,genome_name,gtf = NULL,
   }
 
   if(do_fq_flag){
+    start_time <- Sys.time()
+
     genome = load_genome(genome_name)
-    reads = isoformCount2Reads(count,genome,gene_bed,file.path(dir,"UMI_collapsed.fq.gz"))
+    reads = isoformCount2Reads(umi_count,genome,gene_bed,file.path(dir,"UMI_collapsed.fq.gz"))
 
     qname = as.character(reads@id)
     annot = extractAnnotFromQname(qname,"cell")
     qname = cbind(qname,annot)
 
     saveResult(qname,file.path(dir,"reads_annot.csv"),sep = ",")
+
+    end_time <- Sys.time()
+    duration = end_time-start_time
+    sprintf('Output the UMI collapsed reads took %.2f %s\n', duration, units(duration))
+  }
+
+  cat("Start to map UMI collapsed fastq to genome:\n")
+  do_map_flag = TRUE
+  if(file.exists(file.path(dir,"UMI_collapsed.bam"))){
+    if(!force_map){
+      warning("The mapping result already exists,
+              if you want to redo it please set force_map to be TRUE")
+      do_map_flag = FALSE
+    }
+  }
+  if(do_map_flag){
+    start_time <- Sys.time()
+    cache = fastqMap(fastq = file.path(dir,"UMI_collapsed.fq.gz"),
+                     out_name = file.path(dir,"UMI_collapsed.bam"),
+                     genome_path = genome_path,bed_path = minimap_bed_path,
+                     minimap2 = minimap2,samtools = samtools,
+                     minimap2_thread = cores,samtools_thread = cores)
+    end_time <- Sys.time()
+    duration = end_time-start_time
+    sprintf('Genome mapping took %.2f %s\n', duration, units(duration))
   }
 
   return(0)
@@ -598,6 +650,18 @@ RunLongcellPre = function(fastq_path,barcode_path,
                    cores = cores)
   Param = paramMerge(umi_count_corres,neceParam,...)
   uc = do.call(umi_count_corres,Param)
+
+
+  # output the UMI denoised fastq and bam
+  neceParam = list(umi_count = uc,
+                   dir = file.path(work_dir,"out"),
+                   genome_path = genome_path,genome_name = genome_name,
+                   gene_bed = gene_bed,
+                   minimap2 = minimap2,samtools = samtools,
+                   minimap_bed_path = minimap_bed_path,
+                   cores = cores)
+  Param = paramMerge(UMI_consensus_out,neceParam,...)
+  uc = do.call(UMI_consensus_out,Param)
 
   # clean cache files
   cache = clean_file(work_dir)
