@@ -12,8 +12,8 @@
 #' @importFrom Rsamtools BamFile
 #' @importFrom Rsamtools ScanBamParam
 #' @importFrom Rsamtools scanBamFlag
-#' @importFrom Rsamtools seqlevels
 #' @importFrom GenomicRanges GRanges
+#' @importFrom GenomeInfoDb seqlevels
 #' @importFrom IRanges IRanges
 #' @return return a list including read names, start positions, cigars and the sequences for all reads
 #'
