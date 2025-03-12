@@ -120,6 +120,7 @@ long2square = function(long, row_names_from, col_names_from, values_from,
 #' @param j The name of the column which stores the cells
 #' @param value The name of the column which stores the feature count
 #' @importFrom Matrix writeMM
+#' @importFrom R.utils gzip
 save10X = function(long,path,i = "gene",j = "cell",value = "count"){
   long = long[,c(i,j,value)]
 
@@ -140,6 +141,10 @@ save10X = function(long,path,i = "gene",j = "cell",value = "count"){
   write.table(y, file = file.path(path,"barcodes.tsv"), sep = "\t",
               quote = FALSE, row.names = FALSE, col.names = FALSE)
   writeMM(sparse_mat, file = file.path(path,"matrix.mtx"))
+
+  R.utils::gzip(file.path(path,"features.tsv"),overwrite = TRUE)
+  R.utils::gzip(file.path(path,"barcodes.tsv"),overwrite = TRUE)
+  R.utils::gzip(file.path(path,"matrix.mtx"),overwrite = TRUE)
 }
 
 #' @title saveIsoMat

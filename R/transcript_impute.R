@@ -60,6 +60,89 @@ iso_full_dis = function(read1,read2,split = "|",sep = ","){
 #' @inheritParams iso_full_dis
 iso_full_dis_v <- Vectorize(iso_full_dis, c("read1", "read2"))
 
+#' @title iso_end_diff
+#' @description calculate the difference at the two ends in the alignment between two reads in base pair
+#' @inheritParams iso_full_dis
+#' @importFrom IRanges IRanges width intersect
+#' @return Two numerical number to denote the difference and the 5 and 3 end.
+iso_end_diff <- function(read1, read2, split = "|", sep = ",") {
+  # Convert reads to bins
+  read1_bins <- read2bins(read1, split = split, sep = sep)
+  read2_bins <- read2bins(read2, split = split, sep = sep)
+
+  # Find the overlapping region
+  start <- max(read1_bins$start[1], read2_bins$start[1])
+  end <- min(read1_bins$end[nrow(read1_bins)], read2_bins$end[nrow(read2_bins)])
+
+  # Find the left and right bounds
+  left_bound <- min(read1_bins$start[1], read2_bins$start[1])
+  right_bound <- max(read1_bins$end[nrow(read1_bins)], read2_bins$end[nrow(read2_bins)])
+
+  # Calculate left difference
+  if (start == left_bound) {
+    left_diff <- 0
+  } else {
+    left_range <- IRanges(start = left_bound, end = start)
+    bins1_left <- sum(width(intersect(IRanges(start = read1_bins$start, end = read1_bins$end), left_range)))
+    bins2_left <- sum(width(intersect(IRanges(start = read2_bins$start, end = read2_bins$end), left_range)))
+    left_diff <- bins1_left - bins2_left
+  }
+
+  # Calculate right difference
+  if (end == right_bound) {
+    right_diff <- 0
+  } else {
+    right_range <- IRanges(start = end, end = right_bound)
+    bins1_right <- sum(width(intersect(IRanges(start = read1_bins$start, end = read1_bins$end), right_range)))
+    bins2_right <- sum(width(intersect(IRanges(start = read2_bins$start, end = read2_bins$end), right_range)))
+    right_diff <- bins1_right - bins2_right
+  }
+
+  return(c(left_diff, right_diff))
+}
+
+
+#' @title iso_end_diff_v
+#' @description The vectorized version of the iso_end_diff function
+#' @inheritParams iso_end_diff
+iso_end_diff_v <- Vectorize(iso_end_diff, c("read1", "read2"))
+
+#' @title isomatch_penalty
+#' @description calculate the penalty score from the difference at 5 and 3 end
+#' @param left,right The end difference at the 5' and 3' end
+#' @return A numerical number to denote the penalty score.
+isomatch_penalty = function(left,right){
+  left_penalty = abs(left)
+  right_penalty = abs(right)
+
+  if(left > 0){
+    left_penalty = left_penalty ** 2
+  }
+  if(right > 0){
+    right_penalty = right_penalty ** 2
+  }
+
+  return(left_penalty + right_penalty)
+}
+
+#' @title isomatch_penalty_v
+#' @description The vectorized version of the isomatch_penalty function
+#' @inheritParams isomatch_penalty
+isomatch_penalty_v = Vectorize(isomatch_penalty,c("left","right"))
+
+#' @title penalty2weight
+#' @description Transform the penalty score to weights for isoform alignment
+#' @param x the penalty score
+#' @return A numerical number to denote the weights.
+penalty2weight = function(x){
+  if(sum(x == 0) > 0){
+    x = ifelse(x > 0,0,1)
+  }
+  else{
+    x = 1/x
+  }
+  return(x/sum(x))
+}
 
 #' @title iso_corres
 #' @description map the reads to the annotated isoforms for one gene
@@ -113,17 +196,33 @@ iso_corres = function(transcripts,gene,gtf,thresh = 3,overlap_thresh = 0.25,
       arrange(isoform,-overlap)
   })
   transcripts_iso_corres = as.data.frame(transcripts_iso_corres)
-  transcripts_iso_corres = transcripts_iso_corres %>%
-    mutate(diff = iso_full_dis_v(transcripts_uniq[isoform + 1],sub_gtf_iso[transname+1,"iso"]),
-           isoform = transcripts_uniq[isoform+1],
-           transname = sub_gtf_iso[transname+1,gtf_iso_col]) %>%
-    arrange(isoform,diff)
+  end_diff = as.data.frame(t(iso_end_diff_v(transcripts_uniq[transcripts_iso_corres$isoform + 1],
+                              sub_gtf_iso[transcripts_iso_corres$transname+1,"iso"])))
+  colnames(end_diff) = c("left","right")
+  rownames(end_diff) = NULL
 
-  transcripts_iso_corres = transcripts_iso_corres[!duplicated(transcripts_iso_corres$isoform),]
+  transcripts_iso_corres = cbind(transcripts_iso_corres,end_diff)
+  transcripts_iso_corres = transcripts_iso_corres %>%
+    mutate(isoform = transcripts_uniq[isoform+1],
+           transname = sub_gtf_iso[transname+1,gtf_iso_col])
+
+  transcripts_iso_corres = transcripts_iso_corres %>% mutate(penalty = isomatch_penalty_v(left,right))
+  transcripts_iso_corres = transcripts_iso_corres %>% group_by(isoform) %>%
+    mutate(levels = length(unique(transname))) %>% arrange(levels,penalty)
+
+  #return(transcripts_iso_corres)
+  transcripts_iso_corres_filter = transcripts_iso_corres %>% filter(levels < 3)
+  if(nrow(transcripts_iso_corres_filter) > 0){
+    isos = unique(transcripts_iso_corres_filter$transname)
+    transcripts_iso_corres = transcripts_iso_corres %>% filter(transname %in% isos)
+    transcripts_iso_corres = transcripts_iso_corres %>% group_by(isoform) %>% mutate(levels = length(unique(transname)))
+  }
+  transcripts_iso_corres = transcripts_iso_corres %>% group_by(isoform) %>% mutate(weight = penalty2weight(penalty))
+
+  #transcripts_iso_corres = transcripts_iso_corres[!duplicated(transcripts_iso_corres$isoform),]
   #return(transcripts_iso_corres)
   #transcripts_iso_corres$isoform = transcripts_uniq[transcripts_iso_corres$isoform+1]
   #transcripts_iso_corres$transname = sub_gtf_iso[transcripts_iso_corres$transname+1,gtf_iso_col]
-
 
   return(transcripts_iso_corres)
 }
@@ -204,6 +303,9 @@ iso_count_impute = function(data,cell_col = "cell",
   return(count_impute)
 }
 
+
+
+
 #' @title cells_genes_isos_count
 #' @description imputate the isoform count for multiple genes in multiple cells.
 #' @details Some truncated reads can have ambigous alignment to multiple annotated isoforms, this function will
@@ -218,7 +320,7 @@ iso_count_impute = function(data,cell_col = "cell",
 #' @importFrom dplyr group_by_at
 #' @importFrom dplyr filter_at
 #' @importFrom dplyr summarise
-#' @importFrom tidyr pivot_wider
+#' @importFrom tidyr pivot_wider pivot_longer
 #' @export
 cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
                                   filter_only_intron = TRUE,
@@ -258,16 +360,26 @@ cells_genes_isos_count = function(data,gtf,thresh = 3,overlap_thresh = 0.25,
                            sep = sep,split = split)
     if(is.null(iso_index)){
       sub_data$transname = "unknown"
+      sub_out = sub_data %>% group_by(cell,transname) %>% summarise(count = sum(count),.groups = "drop")
+      colnames(sub_out) = c("cell","isoform","count")
     }
     else{
-      #iso_index = iso_index %>% group_by_at(transcript_col) %>%
-      #  summarise(transname = list(transname),overlap = list(overlap))
-      sub_data = left_join(sub_data,iso_index,by = transcript_col)
-      sub_data$transname[sapply(sub_data$transname,function(i) is.null(i))] = "unknown"
+      # iso_index = iso_index %>% group_by_at(transcript_col) %>%
+      # summarise(transname = list(transname),overlap = list(overlap))
+      # sub_data = left_join(sub_data,iso_index,by = transcript_col)
+      # sub_data$transname[sapply(sub_data$transname,function(i) is.null(i))] = "unknown"
+
+      iso_index_weight = tidyr::pivot_wider(iso_index[,c("isoform","weight","transname")],names_from = "transname",values_from = "weight")
+      iso_index_weight[is.na(iso_index_weight)] = 0
+
+      sub_out = cbind(sub_data$cell,iso_index_weight[match(sub_data$isoform,iso_index_weight$isoform),
+                                            2:ncol(iso_index_weight)]*sub_data$count)
+      colnames(sub_out)[1] = "cell"
+
+      sub_out = tidyr::pivot_longer(sub_out,cols = setdiff(colnames(sub_out),"cell"),names_to = "isoform",values_to = "count")
+      sub_out = sub_out %>% filter(count > 0)
     }
 
-    sub_out = sub_data %>% group_by(cell,transname) %>% summarise(count = sum(count),.groups = "drop")
-    colnames(sub_out) = c("cell","isoform","count")
     #sub_out = iso_count_impute(sub_data,cell_col = cell_col,
     #                           iso_col = "transname",overlap_col = "overlap",
     #                           count_col = count_col)

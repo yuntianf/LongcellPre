@@ -9,7 +9,6 @@ umi_count_corres(
   qual,
   dir,
   gene_bed,
-  genome_name,
   gtf = NULL,
   bar = "barcode",
   gene = "gene",
@@ -31,8 +30,7 @@ umi_count_corres(
   gtf_end_col = "end",
   gtf_iso_col = "transname",
   cores = 1,
-  force_UMI_dedup = FALSE,
-  force_fastq_out = FALSE
+  force_UMI_dedup = FALSE
 )
 }
 \arguments{
