@@ -64,7 +64,6 @@ To view all parameters for this pipeline, you can run `Rscript ./LongcellPre/exe
 We provide a demo data with 200 cells and 3 genes. This data is a subset of the colorectal metastasis sample we used in the paper. The data and corresponding annotations can be downloaded from: 
 https://www.dropbox.com/scl/fo/21tw8rrkaancani0fzq3t/AKNHUk06onR2c2dYuB4wXWY?rlkey=1zikug28qr9ziw2cdsgelrm9p&st=ypm9m00i&dl=0
 
-For a more detailed explanation of steps for LongcellPre, please refer to https://github.com/yuntianf/LongcellPre/blob/main/vignettes/LongcellPre.ipynb
 
 ## output
 The output of the LongcellPre pipeline includes:
