@@ -93,7 +93,20 @@ The output of the LongcellPre pipeline includes:
 │   │   └── matrix.mtx
 │   ├── reads_annot.csv: The read annotation for the UMI collapsed fastq file.
 │   └── UMI_collapsed.fq.gz: The polished reads after UMI collapsion. This can be input for other tools.
+│   └── UMI_collapsed.bam: The mapping result for UMI_collapsed.fq.gz.
+│   └── UMI_collapsed.bam.bai
 └── polish.fq.gz
+```
+
+For the isoform quantification formatted as cell by isoform matrix, we recommend the combination of LongcellPre and IsoQuant (https://github.com/ablab/IsoQuant), which has the overall best performance in our benchmark. 
+```
+python isoquant.py --reference $GENOME_PATH \
+--genedb $GTF \
+--bam UMI_collapsed.bam \
+--read_group file:reads_annot.csv:0:1:, \
+--data_type nanopore -o $OUTDIR \
+--report_novel_unspliced true \
+--clean_start
 ```
 
 ## Citation
