@@ -97,8 +97,9 @@ The output of the LongcellPre pipeline includes:
 │   └── UMI_collapsed.bam.bai
 └── polish.fq.gz
 ```
+The isoform quantification output `iso_count.txt` can be directly analyzed by our downstream package `Longcell` (https://github.com/yuntianf/Longcell).
 
-For the isoform quantification formatted as cell by isoform matrix, we recommend the combination of LongcellPre and IsoQuant (https://github.com/ablab/IsoQuant), which has the overall best performance in our benchmark. 
+For the isoform quantification formatted as cell by isoform matrix, we recommend the combination of LongcellPre and IsoQuant (https://github.com/ablab/IsoQuant), which has the overall best performance in our benchmark. The input for IsoQuant is `UMI_collapsed.bam` and `reads_annot.csv`:
 ```
 python isoquant.py --reference $GENOME_PATH \
 --genedb $GTF \
