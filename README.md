@@ -64,7 +64,6 @@ To view all parameters for this pipeline, you can run `Rscript ./LongcellPre/exe
 We provide a demo data with 200 cells and 3 genes. This data is a subset of the colorectal metastasis sample we used in the paper. The data and corresponding annotations can be downloaded from: 
 https://www.dropbox.com/scl/fo/21tw8rrkaancani0fzq3t/AKNHUk06onR2c2dYuB4wXWY?rlkey=1zikug28qr9ziw2cdsgelrm9p&st=ypm9m00i&dl=0
 
-For a more detailed explanation of steps for LongcellPre, please refer to https://github.com/yuntianf/LongcellPre/blob/main/vignettes/LongcellPre.ipynb
 
 ## output
 The output of the LongcellPre pipeline includes:
@@ -93,7 +92,21 @@ The output of the LongcellPre pipeline includes:
 │   │   └── matrix.mtx
 │   ├── reads_annot.csv: The read annotation for the UMI collapsed fastq file.
 │   └── UMI_collapsed.fq.gz: The polished reads after UMI collapsion. This can be input for other tools.
+│   └── UMI_collapsed.bam: The mapping result for UMI_collapsed.fq.gz.
+│   └── UMI_collapsed.bam.bai
 └── polish.fq.gz
+```
+The isoform quantification output `iso_count.txt` can be directly analyzed by our downstream package `Longcell` (https://github.com/yuntianf/Longcell).
+
+For the isoform quantification formatted as cell by isoform matrix, we recommend the combination of LongcellPre and IsoQuant (https://github.com/ablab/IsoQuant), which has the overall best performance in our benchmark. The input for IsoQuant is `UMI_collapsed.bam` and `reads_annot.csv`:
+```
+python isoquant.py --reference $GENOME_PATH \
+--genedb $GTF \
+--bam UMI_collapsed.bam \
+--read_group file:reads_annot.csv:0:1:, \
+--data_type nanopore -o $OUTDIR \
+--report_novel_unspliced true \
+--clean_start
 ```
 
 ## Citation
@@ -101,7 +114,5 @@ The output of the LongcellPre pipeline includes:
 If you use Longcell for published work, please cite our manuscript:
 
 ``` r
-Single cell and spatial alternative splicing analysis with long read sequencing
-Yuntian Fu, Heonseok Kim, Jenea I. Adams, Susan M. Grimes, Sijia Huang, Billy T. Lau, Anuja Sathe, Paul Hess, Hanlee P. Ji, Nancy R. Zhang
-bioRxiv 2023.02.23.529769; doi: https://doi.org/10.1101/2023.02.23.529769
+Fu Y, Kim H, Roy S, et al. Single cell and spatial alternative splicing analysis with Nanopore long read sequencing[J]. Nature Communications, 2025, 16(1): 6654.
 ```
