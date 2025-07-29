@@ -20,6 +20,8 @@ The simplist way to run `LongcellPre` is to apply:
 Rscript ./LongcellPre/exec/RunLongcellPre.R -f {FASTQ} -b {BARCODES} -t {TOOLKIT} -q {PROTOCOL} -g {GENOME} -n {GENOME_NAME} --gtf {GTF} -o {OUTDIR}
 ```
 The execution file can also be downloaded from https://github.com/yuntianf/LongcellPre/blob/main/exec/RunLongcellPre.R
+
+
 The basic parameters for this pipeline are shown here:
 ```
 Pipeline for single cell Nanopore RNA-seq preprocessing
