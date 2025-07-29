@@ -63,8 +63,15 @@ readBam = function(bam_path,chr,start,end, strand, map_qual = 30){
 #' @return return bool vector to indicate if the polyA sites are real.
 mid_polyA_filter = function(endsites, genome,chr,strand,bin = 20,thresh = 0.4){
   endsites_uniq = unique(endsites)
-  read = as.character(getSeq(genome,chr,start = min(endsites_uniq)-bin,
-                             end = max(endsites_uniq)+bin,strand = strand))
+  read = tryCatch({as.character(getSeq(genome,chr,start = min(endsites_uniq)-bin,
+                             end = max(endsites_uniq)+bin,strand = strand))},
+                  error = function(e) {
+                    warning(sprintf("Failed to get sequence for '%s': %s", chr, e$message))
+                    NA_character_
+                    })
+  if(is.na(read)){
+    return(FALSE)
+  }
   endsites_offset = endsites_uniq-min(endsites_uniq)+bin
   flag = sapply(endsites_offset,function(i){
     sub_read = substr(read,start = i-bin+1,stop = i+bin)

@@ -13,15 +13,17 @@ seq_config = function(protocol,toolkit,
   if(protocol == "10X"){
     if(toolkit == 5){
       adapter = "TTTCTTATATGGG"
+      UMI_len = 10
     }
     else{
       adapter = "GCGTCGTGTAG"
+      UMI_len = 12
     }
     left_flank = 55
     right_flank = -10
     drop_adapter =FALSE
     barcode_len = 16
-    UMI_len = 10
+
   }
   else if(protocol == "VISIUM"){
     if(toolkit == 5){

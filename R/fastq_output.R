@@ -132,14 +132,20 @@ isoformCount2Reads = function(mat,genome,gene_bed,filename,
     chr = unique(unlist(sub_bed[,chr_col]))
     strand = unique(unlist(sub_bed[,strand_col]))
 
-    gene_reads = isoformCount2ReadsForGene(sub_mat,genome,chr,strand,
-                                           isoform_col = isoform_col,count_col = count_col,
-                                           name_col = name_col,
-                                           quality = quality,...)
+    if (chr %in% names(genome)){
+      gene_reads = isoformCount2ReadsForGene(sub_mat,genome,chr,strand,
+                                             isoform_col = isoform_col,count_col = count_col,
+                                             name_col = name_col,
+                                             quality = quality,...)
+    }
+    else{
+      gene_reads = NULL
+    }
 
     return(gene_reads)
   },future.seed=TRUE)
 
+  reads <- Filter(Negate(is.null), reads)
   reads = Reduce("append",reads)
   writeFastq(reads, filename, compress = TRUE)
   return(reads)

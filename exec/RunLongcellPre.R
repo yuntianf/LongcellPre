@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript
+options(future.globals.maxSize = 24 * 1024^3)
 library(LongcellPre)
 library(argparse)
 
@@ -30,10 +31,10 @@ argparse = function(){
 
   ##### output related args
   p$add_argument("-o","--work_dir", help="The output directory", default = "./")
-  p$add_argument("--to_isoform", help="A flag to indicate if the cell by isoform matrix should be generated", default = TRUE)
+  p$add_argument("--to_isoform", help="A flag to indicate if the cell by isoform matrix should be generated", default = TRUE,type = "logical")
 
   ##### parallel related args
-  p$add_argument("-c","--cores", help="The number of cores used for parallization", default = 1)
+  p$add_argument("-c","--cores", help="The number of cores used for parallization", default = 1,type = "integer")
   p$add_argument("-m","--mode", help="The mode for parallization. The parallization is implemented with future.apply,
                  the feasible modes can be 'sequential','multicore','cluster'",
                  choices = c("sequential","multisession","multicore","cluster"), default = "sequential")
@@ -51,49 +52,50 @@ argparse = function(){
   if (full_help | !help){
     ### Unnecessary parameters
     ##### tag extraction
-    p$add_argument("--window", help="The kmer size used to search for adapter sequence", default = 10)
-    p$add_argument("--step", help="The step size when search the adapter in kmer way", default = 2)
-    p$add_argument("--left_flank", help="After the adapter is found, the length of the left flank sequence to be preserved", default = 0)
-    p$add_argument("--right_flank", help="After the adapter is found, the length of the right flank sequence to be preserved", default = 0)
+    p$add_argument("--window", help="The kmer size used to search for adapter sequence", default = 10,type = "integer")
+    p$add_argument("--step", help="The step size when search the adapter in kmer way", default = 2,type = "integer")
+    p$add_argument("--left_flank", help="After the adapter is found, the length of the left flank sequence to be preserved", default = 0,type = "integer")
+    p$add_argument("--right_flank", help="After the adapter is found, the length of the right flank sequence to be preserved", default = 0,type = "integer")
     p$add_argument("--drop_adapter", help="After the adapter is found, the molecular tag aside the adapter would be extracted and returned. In this step, 'drop_adapter' indicates
-                 if the adapter sequence should be droped.", default = FALSE)
-    p$add_argument("--polyA_bin", help="The window size to search for the polyA", default = 20)
-    p$add_argument("--polyA_base_count", help="The minimum number of base A's required within the search window to confirm the presence of a polyA sequence", default = 15)
+                 if the adapter sequence should be droped.", default = FALSE,type = "logical")
+    p$add_argument("--polyA_bin", help="The window size to search for the polyA", default = 20,type = "integer")
+    p$add_argument("--polyA_base_count", help="The minimum number of base A's required within the search window to confirm the presence of a polyA sequence", default = 15,type = "integer")
 
     # parameters for barcode match
-    p$add_argument("--barcode_len", help="The length of the cell barcode", default = 16)
+    p$add_argument("--barcode_len", help="The length of the cell barcode", default = 16,type = "integer")
     p$add_argument("--batch", help="The number of reads to be processed for cell barcode alignment for one time.
-                   After one round of process, the parameters for the distribution of the start position of cell barcode would be updated", default = 100)
+                   After one round of process, the parameters for the distribution of the start position of cell barcode would be updated", default = 100,type = "integer")
     p$add_argument("--cos_thresh", help="The lower bound of the cos similarity for the cell barcodes to be preserved as candidates for another round of
-                   edit distance comparison", default = 0.25)
+                   edit distance comparison", default = 0.25,type = "double")
     p$add_argument("--top", help="If there are multiple cell barcodes passing the threshold of cos similarity, the number of top barcodes to be preserved for the
-                   edit distance comparison", default = 5)
-    p$add_argument("--edit_thresh", help="The higher bound of the edit distance for the cell barcode match", default = 3)
-    p$add_argument("--UMI_len", help="The length of the unique molecule identifier", default = 10)
-    p$add_argument("--UMI_flank", help="To be tolerant of the insertions and deletions, the length of the flank sequence when extracting the UMI", default = 1)
-    p$add_argument("--mean_edit_thresh", help="After cell barcode matching, any cell barcode with an average edit distance across the mapped reads exceeding the mean_edit_thresh will be filtered out.", default = 1.5)
+                   edit distance comparison", default = 5,type = "integer")
+    p$add_argument("--edit_thresh", help="The higher bound of the edit distance for the cell barcode match", default = 3,type = "integer")
+    p$add_argument("--UMI_len", help="The length of the unique molecule identifier", default = 12,type = "integer")
+    p$add_argument("--UMI_flank", help="To be tolerant of the insertions and deletions, the length of the flank sequence when extracting the UMI", default = 1,type = "integer")
+    p$add_argument("--mean_edit_thresh", help="After cell barcode matching, any cell barcode with an average edit distance across the mapped reads exceeding the mean_edit_thresh will be filtered out.",
+                   default = 1.5,type = "double")
 
     # parameters for reads extraction
-    p$add_argument("--map_qual", help="The lower bound for the mapping quality of a read", default = 30)
-    p$add_argument("--end_flank", help="The maximum allowable length for a read to exceed the boundaries of a gene during mapping.", default = 200)
+    p$add_argument("--map_qual", help="The lower bound for the mapping quality of a read", default = 30,type = "integer")
+    p$add_argument("--end_flank", help="The maximum allowable length for a read to exceed the boundaries of a gene during mapping.", default = 200,type = "integer")
 
     # parameters for rerun
-    p$add_argument("--force_barcode_match", help="The flag to indicate if the cell barcode match should be rerun if there already exist the output files", default = FALSE)
-    p$add_argument("--force_map", help="The flag to indicate if the read mapping should be rerun if there already exist the output files", default = FALSE)
-    p$add_argument("--force_isoform_extract", help="The flag to indicate if the isoform extraction should be rerun if there already exist the output files", default = FALSE)
-    p$add_argument("--force_UMI_dedup", help="The flag to indicate if the UMI deduplication should be rerun if there already exist the output files", default = FALSE)
-    p$add_argument("--force_fastq_out", help="The flag to indicate if the fastq output should be rerun if there already exist the output files", default = FALSE)
+    p$add_argument("--force_barcode_match", help="The flag to indicate if the cell barcode match should be rerun if there already exist the output files", default = FALSE,type = "logical")
+    p$add_argument("--force_map", help="The flag to indicate if the read mapping should be rerun if there already exist the output files", default = FALSE,type = "logical")
+    p$add_argument("--force_isoform_extract", help="The flag to indicate if the isoform extraction should be rerun if there already exist the output files", default = FALSE,type = "logical")
+    p$add_argument("--force_UMI_dedup", help="The flag to indicate if the UMI deduplication should be rerun if there already exist the output files", default = FALSE,type = "logical")
+    p$add_argument("--force_fastq_out", help="The flag to indicate if the fastq output should be rerun if there already exist the output files", default = FALSE,type = "logical")
 
     # parameters for reads filtering
-    p$add_argument("--splice_site_thresh", help="If the number of the appearance for a splice site is lower than this threshold, reads with this splice site would be filtered out", default = 3)
-    p$add_argument("--filter_only_intron", help="A bool flag to indicate if reads only introns should be preserved", default = TRUE)
+    p$add_argument("--splice_site_thresh", help="If the number of the appearance for a splice site is lower than this threshold, reads with this splice site would be filtered out", default = 3,type = "integer")
+    p$add_argument("--filter_only_intron", help="A bool flag to indicate if reads only introns should be preserved", default = TRUE,type = "logical")
 
     # parameters for mapping reads to isoform
-    p$add_argument("--mid_offset_thresh", help="When mapping a read to an annotated isoform, the maximum allowable offset for an internal splice site.", default = 3)
-    p$add_argument("--overlap_thresh", help="When mapping a read to an annotated isoform, the read must have a minimum overlap ratio with the annotated isoform", default = 0)
+    p$add_argument("--mid_offset_thresh", help="When mapping a read to an annotated isoform, the maximum allowable offset for an internal splice site.", default = 3,type = "integer")
+    p$add_argument("--overlap_thresh", help="When mapping a read to an annotated isoform, the read must have a minimum overlap ratio with the annotated isoform", default = 0,type = "integer")
 
     # parameters for verbose
-    p$add_argument("--verbose",help = "The flag to indicate the information print of umi count process", default = FALSE)
+    p$add_argument("--verbose",help = "The flag to indicate the information print of umi count process", default = FALSE,type = "logical")
   }
 
   return(p$parse_args())
