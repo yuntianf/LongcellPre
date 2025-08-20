@@ -81,8 +81,7 @@ The output of the LongcellPre pipeline includes:
 │   └── polish.bam.bai
 ├── BarcodeMatch
 │   ├── adapterNeedle.txt: The summary statistics for the Needleman score of the kmer adapter sequence in each reads compared to its know sequence.
-│   ├── BarcodeMatchIso.txt: 
-│   └── BarcodeMatch.txt
+│   └── BarcodeMatchIso.txt: The cell barcode, UMI, and read alignment for each read.
 ├── out
 │   ├── gene: The sparse matrix for the cell by gene matrix.
 │   │   ├── barcodes.tsv
