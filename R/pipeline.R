@@ -336,7 +336,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
 
     start_time <- Sys.time()
     mem = peakRAM::peakRAM({
-      genome<-load_genome(genome_name)
+      suppressWarnings({genome<-load_genome(genome_name)})
       reads = reads_extraction(bam_path = file.path(work_dir,"bam/polish.bam"),
                                gene_bed = gene_bed,genome = genome,
                                toolkit = toolkit,
@@ -347,6 +347,8 @@ reads_extract_bc = function(fastq_path,barcode_path,
       reads_bc = reads_bc %>%
         mutate(polyA.x = as.numeric(polyA.x),polyA.y = as.numeric(polyA.y)) %>%
         mutate(polyA = polyA.x & polyA.y) %>% dplyr::select(-polyA.x,-polyA.y)
+      saveResult(reads_bc %>% dplyr::select(qname,barcode,gene,isoform,umi,polyA),
+                 file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt"))
     })
     end_time <- Sys.time()
     duration = end_time-start_time
@@ -359,7 +361,6 @@ reads_extract_bc = function(fastq_path,barcode_path,
       qual = adapter_dis(data = reads_bc,UMI_len = UMI_len,flank = UMI_flank)
 
       #reads_bc = reads_bc %>% dplyr::select(qname,barcode,gene,isoform,umi,polyA)
-      saveResult(reads_bc,file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt"))
       saveResult(qual,file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))
     }
     else{

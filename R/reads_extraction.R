@@ -3,7 +3,7 @@
 #' @description extract reads in a specific region from the bam file
 #' @details extract reads in a specific region from the bam file via Rsamtools
 #'
-#' @param bam_path The path of the input bam file
+#' @param bamFile The input bam file read by Rsamtools
 #' @param chr The chromosome of reads located in, should be chr
 #' @param start The start position of the reads, should be int
 #' @param end The end position of the reads, should be int
@@ -18,12 +18,12 @@
 #' @return return a list including read names, start positions, cigars and the sequences for all reads
 #'
 
-readBam = function(bam_path,chr,start,end, strand, map_qual = 30){
+readBam = function(bamFile,chr,start,end, strand, map_qual = 30){
   if (!strand %in% c("+", "-")) {
     stop("The strand of mapping should be either '+' or '-'!")
   }
 
-  bamFile <- BamFile(bam_path)
+  # bamFile <- BamFile(bam_path)
 
   gr <- GRanges(seqnames = chr,
                 ranges = IRanges(start = start, end = end))
@@ -105,7 +105,7 @@ mid_polyA_filter = function(endsites, genome,chr,strand,bin = 20,thresh = 0.4){
 #' @importFrom dplyr filter
 #' @return A dataframe including the , exons, and polyA existence, each row is a read.
 #'
-gene_reads_extraction = function(bam_path,gene_bed,genome,
+gene_reads_extraction = function(bamFile,gene_bed,genome,
                                  toolkit = 5,
                                  map_qual = 30,
                                  end_flank = 200,
@@ -120,7 +120,7 @@ gene_reads_extraction = function(bam_path,gene_bed,genome,
   strand = as.character(unique(gene_bed$strand))
 
   #start_time <- Sys.time()
-  bam = readBam(bam_path,chr = chr,start = start,end = end,strand = strand,map_qual = map_qual)
+  bam = readBam(bamFile,chr = chr,start = start,end = end,strand = strand,map_qual = map_qual)
 
   #end_time <- Sys.time()
   #print(paste("readbam:",end_time - start_time))
@@ -175,11 +175,12 @@ reads_extraction = function(bam_path,gene_bed,genome,toolkit = 5,
                                  mid_polyA_bin = 20,
                                  mid_polyA_thresh = 0.4){
   genes = unique(gene_bed$gene)
+  bamFile <- BamFile(bam_path)
 
   reads = future_lapply(genes,function(i){
     sub_bed = gene_bed %>% filter(gene == i)
     #start_time <- Sys.time()
-    sub_reads = gene_reads_extraction(bam_path = bam_path,gene_bed = sub_bed,
+    sub_reads = gene_reads_extraction(bamFile = bamFile,gene_bed = sub_bed,
                                       genome = genome,
                                       toolkit = toolkit,map_qual = map_qual,
                                       end_flank = end_flank,

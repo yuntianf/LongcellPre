@@ -187,11 +187,14 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
 #' @return A dataframe with two columns, the first is the edit distance and the secons is
 #' how many adapters have such an edit distance to the original adapter
 adapter_dis = function(data,UMI_len = 10,flank = 1){
-  adapter = data %>% filter(edit == 0) %>%
-    filter(nchar(adapter) == UMI_len+2*flank)
+  print(UMI_len+2*flank)
+
+  adapter = data %>% mutate(edit = as.numeric(edit)) %>%
+            filter(edit == 0) %>%
+            filter(nchar(adapter) == UMI_len+2*flank)
 
   adapter_count = table(adapter$adapter)
-  adapter_seq = names(adapter_count)[adapter_count == max(adapter_count)]
+  adapter_seq = names(adapter_count)[adapter_count == max(adapter_count)][1]
 
   adapter_dis = cbind(needleScores(adapter_seq,names(adapter_count)),adapter_count)
   adapter_dis = as.data.frame(adapter_dis)

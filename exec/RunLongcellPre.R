@@ -103,4 +103,11 @@ argparse = function(){
 
 args = argparse()
 
+log_file <- file.path(args$work_dir, "arg.log")
+
+writeLines(
+  paste(names(args), unlist(args), sep = ": "),
+  con = log_file
+)
+
 cache = do.call(RunLongcellPre, args)
