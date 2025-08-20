@@ -358,7 +358,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
 
     if(nrow(reads_bc) > 0){
       # evaluate data quality
-      qual = adapter_dis(data = reads_bc,UMI_len = UMI_len,flank = UMI_flank)
+      qual = adapter_dis(data = reads_bc)
 
       #reads_bc = reads_bc %>% dplyr::select(qname,barcode,gene,isoform,umi,polyA)
       saveResult(qual,file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))

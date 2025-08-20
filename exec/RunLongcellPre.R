@@ -54,15 +54,15 @@ argparse = function(){
     ##### tag extraction
     p$add_argument("--window", help="The kmer size used to search for adapter sequence", default = 10,type = "integer")
     p$add_argument("--step", help="The step size when search the adapter in kmer way", default = 2,type = "integer")
-    p$add_argument("--left_flank", help="After the adapter is found, the length of the left flank sequence to be preserved", default = 0,type = "integer")
-    p$add_argument("--right_flank", help="After the adapter is found, the length of the right flank sequence to be preserved", default = 0,type = "integer")
+    p$add_argument("--left_flank", help="After the adapter is found, the length of the left flank sequence to be preserved", type = "integer")
+    p$add_argument("--right_flank", help="After the adapter is found, the length of the right flank sequence to be preserved", type = "integer")
     p$add_argument("--drop_adapter", help="After the adapter is found, the molecular tag aside the adapter would be extracted and returned. In this step, 'drop_adapter' indicates
                  if the adapter sequence should be droped.", default = FALSE,type = "logical")
     p$add_argument("--polyA_bin", help="The window size to search for the polyA", default = 20,type = "integer")
     p$add_argument("--polyA_base_count", help="The minimum number of base A's required within the search window to confirm the presence of a polyA sequence", default = 15,type = "integer")
 
     # parameters for barcode match
-    p$add_argument("--barcode_len", help="The length of the cell barcode", default = 16,type = "integer")
+    p$add_argument("--barcode_len", help="The length of the cell barcode", type = "integer")
     p$add_argument("--batch", help="The number of reads to be processed for cell barcode alignment for one time.
                    After one round of process, the parameters for the distribution of the start position of cell barcode would be updated", default = 100,type = "integer")
     p$add_argument("--cos_thresh", help="The lower bound of the cos similarity for the cell barcodes to be preserved as candidates for another round of
@@ -70,7 +70,7 @@ argparse = function(){
     p$add_argument("--top", help="If there are multiple cell barcodes passing the threshold of cos similarity, the number of top barcodes to be preserved for the
                    edit distance comparison", default = 5,type = "integer")
     p$add_argument("--edit_thresh", help="The higher bound of the edit distance for the cell barcode match", default = 3,type = "integer")
-    p$add_argument("--UMI_len", help="The length of the unique molecule identifier", default = 12,type = "integer")
+    p$add_argument("--UMI_len", help="The length of the unique molecule identifier", type = "integer")
     p$add_argument("--UMI_flank", help="To be tolerant of the insertions and deletions, the length of the flank sequence when extracting the UMI", default = 1,type = "integer")
     p$add_argument("--mean_edit_thresh", help="After cell barcode matching, any cell barcode with an average edit distance across the mapped reads exceeding the mean_edit_thresh will be filtered out.",
                    default = 1.5,type = "double")
