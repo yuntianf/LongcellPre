@@ -347,7 +347,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
       reads_bc = reads_bc %>%
         mutate(polyA.x = as.numeric(polyA.x),polyA.y = as.numeric(polyA.y)) %>%
         mutate(polyA = polyA.x & polyA.y) %>% dplyr::select(-polyA.x,-polyA.y)
-      saveResult(reads_bc %>% dplyr::select(qname,barcode,gene,isoform,umi,polyA),
+      saveResult(reads_bc, #%>% dplyr::select(name,barcode,gene,isoform,umi,polyA),
                  file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt"))
     })
     end_time <- Sys.time()
