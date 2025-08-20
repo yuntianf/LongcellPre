@@ -106,7 +106,8 @@ args = argparse()
 log_file <- file.path(args$work_dir, "arg.log")
 
 writeLines(
-  paste(names(args), unlist(args), sep = ": "),
+  mapply(function(name, value) paste0(name, ": ", toString(value)),
+         names(args), args),
   con = log_file
 )
 
