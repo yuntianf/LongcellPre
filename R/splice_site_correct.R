@@ -20,7 +20,7 @@ splice_site_table <- function(isoforms,
 
   out = as.data.frame(do.call(cbind,out))
   if(ncol(out) > 3){
-    end_thresh= 5
+    end_thresh= 1
     mid_sites = as.numeric(colnames(out)[3:(ncol(out)-1)])
     out = lapply(1:nrow(out),function(i){
       x = unlist(out[i,])

@@ -146,6 +146,7 @@ umi_count <- function(cell_exon,qual, gene_strand,
           }
             return(NULL)
         }
+        tryCatch({
         sub_umi_count = gene_umi_count(sub_cell_exon,qual = qual,strand = strand,
                                        bar = bar,isoform = isoform,
                                        polyA = polyA,sim_thresh = sim_thresh,
@@ -157,6 +158,11 @@ umi_count <- function(cell_exon,qual, gene_strand,
         }
         sub_umi_count$gene = i
         return(sub_umi_count)
+        }, error = function(e) {
+          # Catch and report the error
+          message("Error processing gene ", i, ": ", conditionMessage(e))
+          return(NULL)  # skip this gene
+        })
     })
 
     genes_umi_count <- do.call(rbind,genes_umi_count)

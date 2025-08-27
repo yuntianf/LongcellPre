@@ -422,7 +422,7 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
 
   if(do_ud_flag){
     cores = coreDetect(cores)
-    data_split = genes_distribute(data,cores,gene)
+    data_split = genes_distribute(data,16*cores,gene)
 
     gene_strand = unique(gene_bed[,c(bed_gene_col,bed_strand_col)])
 
