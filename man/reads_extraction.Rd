@@ -17,8 +17,6 @@ reads_extraction(
 )
 }
 \arguments{
-\item{bam_path}{The path of the input bam file}
-
 \item{gene_bed}{The gene bed annotation, should be a dataframe}
 
 \item{genome}{The genome annotation from BSgenome.}

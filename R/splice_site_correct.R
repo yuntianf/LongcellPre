@@ -10,43 +10,43 @@
 #' @return A dataframe, the first and the last column stores the start and end position of each read,
 #' the middle columns store if each read has the splicing sites
 splice_site_table <- function(isoforms,
-                              #polyA,strand,
-                              split = "|",sep = ",",
-                              splice_site_thresh = 10){
-  out = splice_site_table_cpp(isoforms,split,sep,splice_site_thresh)
+                              split = "|", sep = ",",
+                              splice_site_thresh = 10) {
+  out <- splice_site_table_cpp(isoforms, split, sep, splice_site_thresh)
 
-  out$start = as.numeric(out$start)
-  out$end = as.numeric(out$end)
-
+  # Ensure numeric & data.frame once
+  out$start <- as.numeric(out$start)
+  out$end   <- as.numeric(out$end)
   out = as.data.frame(do.call(cbind,out))
-  if(ncol(out) > 3){
-    end_thresh= 1
-    mid_sites = as.numeric(colnames(out)[3:(ncol(out)-1)])
-    out = lapply(1:nrow(out),function(i){
-      x = unlist(out[i,])
-      id = as.numeric(x["id"])
-      start = as.numeric(x["start"])
-      end = as.numeric(x["end"])
-      x[as.character(mid_sites[(mid_sites > (end-end_thresh)) | (mid_sites < (start+end_thresh))])] = NA
 
-      #if(polyA[id] == 0){
-      #  x[as.character(mid_sites[(mid_sites > (end+end_thresh)) | (mid_sites < (start-end_thresh))])] = NA
-      #}
-      #else{
-      #  if(strand == "+"){
-      #    x[as.character(mid_sites[mid_sites < (start-end_thresh)])] = NA
-      #  }
-      #  else if(strand == "-"){
-      #    x[as.character(mid_sites[mid_sites > (end + end_thresh)])] = NA
-      #  }
-      #}
-      return(x)
-    })
-    out = as.data.frame(do.call(rbind,out))
-    mid_sites = as.character(sort(mid_sites))
-    out = as.data.frame(out[,c("id","start",mid_sites,"end")])
+  # return(out)
+  if (ncol(out) > 3) {
+    # Identify, numeric-order, and keep mid-site columns
+    mid_names <- setdiff(colnames(out), c("id", "start", "end"))
+    ord <- order(suppressWarnings(as.numeric(mid_names)))
+    mid_cols <- mid_names[ord]
+
+    # Row-wise bounds computed once
+    end_thresh = 0
+    lower <- out$start + end_thresh
+    upper <- out$end   - end_thresh
+
+    # Update each column in place to avoid big temporary matrices
+    for (nm in mid_cols) {
+      v <- suppressWarnings(as.numeric(out[[nm]]))  # numeric, NAs preserved
+      # One logical vector per column; no large matrices
+      bad <- (as.numeric(nm) < lower) | (as.numeric(nm) > upper)
+      # Fast path: if any finite values exist, mask out-of-bounds
+      if (any(bad, na.rm = TRUE)) v[bad] <- NA_real_
+      out[[nm]] <- v
+    }
+
+    # Reassemble columns in desired order without cbind copying chains
+    out <- out[c("id", "start", mid_cols, "end")]
   }
-  return(out)
+
+  rownames(out) <- NULL
+  out
 }
 
 #' @title mid_len
@@ -73,115 +73,50 @@ mid_len = function(mid,sep = ","){
 #' @description group middle splicing sites which can transform to each other by truncations.
 #'
 #' @inheritParams mid_len
+#' @importFrom Matrix Matrix
 #' @return A dataframe with two columns, the first column denotes the middle splicing site string,
 #' the second denotes the splicing site string that can transform to this splicing site string by
 #' truncations.
-mid_group = function(mid,sep = ","){
-  mat = strsplit(mid,split = sep,fixed = TRUE)
-  mat = do.call(rbind,mat)
+#'
+mid_group = function (mid, sep = ",")
+{
+  mat = strsplit(mid, split = sep, fixed = TRUE)
+  mat = do.call(rbind, mat)
   suppressWarnings(storage.mode(mat) <- "numeric")
-
-
-  mid = mid[order(rowSums(is.na(mat)),decreasing = TRUE)]
-  mat = mat[order(rowSums(is.na(mat)),decreasing = TRUE),,drop = FALSE]
-
-
-  if(nrow(mat) == 1){
-    result = as.data.frame(cbind(mid,mid))
-    colnames(result) = c("c","p")
+  mid = mid[order(rowSums(is.na(mat)), decreasing = TRUE)]
+  mat = mat[order(rowSums(is.na(mat)), decreasing = TRUE),
+            , drop = FALSE]
+  if (nrow(mat) == 1) {
+    result = as.data.frame(cbind(mid, mid))
+    colnames(result) = c("c", "p")
     return(result)
   }
+  mask = as.matrix(is.na(mat))
 
-  is_subset = function(child, parent){
-    if(length(child) != length(parent)){
-      stop("The length of two input vectors should be the same!")
-    }
-    if(sum(is.na(child)|is.na(parent))!=sum(is.na(child))){
-      return(FALSE)
-    }
-    diff = xor(child,parent)
-    diff[is.na(diff)] = 0
-    if(sum(diff) == 0){
-      return(TRUE)
-    }
-    else{
-      return(FALSE)
+  NA_flag = (mask %*% t(mask) - rowSums(mask)) == 0
+  ones_flag = matrix_xor(mat)
+  result = Matrix(NA_flag & ones_flag, sparse = TRUE)
+  result = as.data.frame(summary(as(result, "generalMatrix")))
+  if (length(result) > 0) {
+    result = result %>% filter(i != j) %>% dplyr::select(-x)
+    result = result[, c("j", "i")]
+    colnames(result) = c("c", "p")
+    result = result %>% mutate(c = mid[c], p = mid[p])
+    orphan = setdiff(mid, result$c)
+    if (length(orphan) > 0) {
+      orphan = as.data.frame(cbind(orphan, NA))
+      colnames(orphan) = c("c", "p")
+      result = rbind(result, orphan)
     }
   }
-
-  result = lapply(1:(nrow(mat)-1),function(i){
-    sub = lapply((i+1):nrow(mat),function(j){
-      if(is_subset(mat[i,],mat[j,])){
-        return(c(i,j))
-      }
-    })
-    sub = do.call(rbind,sub)
-  })
-  result = as.data.frame(do.call(rbind,result))
-  if(length(result) > 0){
-    colnames(result) = c("c","p")
-    result = result %>% mutate(c = mid[c],p = mid[p])
-    orphan = setdiff(mid,result$c)
-    if(length(orphan) > 0){
-      orphan = as.data.frame(cbind(orphan,NA))
-      colnames(orphan) = c("c","p")
-      result = rbind(result,orphan)
-    }
+  else {
+    result = as.data.frame(cbind(mid, NA))
+    colnames(result) = c("c", "p")
   }
-  else{
-    result = as.data.frame(cbind(mid,NA))
-    colnames(result) = c("c","p")
-  }
-
   return(result)
 }
 
-#' @title mid_count
-#'
-#' @description Count the frequency of middle splicing sites for each UMI cluster.
-#' @details Count the frequency of middle splicing sites for each UMI cluster, the highest one will be chosen
-#' as the representative and other splicing sites will be attributed to the representative.
-#'
-#' @param mid A string vector of middle splicing sites within a UMI cluster
-#' @param total All types of middl splicing sites vector
-#' @param parent The middle splicing site group output from "mid_group"
-#' @param len The number of covered splicing sites for each read output from mid_len.
-#' @return A dataframe, the first column is the original middle splicing sites, the second column is the chosen
-#' representative within this UMI cluster, the third column stores the count of the original.
-mid_count = function (mid, total, parent, len) {
-  count_list = table(mid)
-  count_mat = as.data.frame(count_list)
 
-  colnames(count_mat) = c("mid","count")
-  count_mat = count_mat %>% mutate(mid = as.character(mid))
-  if(nrow(count_mat) < 2){
-    mid_coexist = cbind(count_mat$mid,
-                        count_mat$mid,
-                        count_mat$count)
-    return(mid_coexist)
-  }
-  count_mat = left_join(count_mat,len,by = "mid")
-  count_mat = count_mat %>% arrange(-count,-size)
-  count_mat = count_mat[1:2,]
-
-  #start = Sys.time()
-  count_mat = suppressWarnings(left_join(count_mat,
-                                         parent %>% filter(p %in% count_mat$mid),
-                                         by = c("mid" = "c")))
-
-  if(sum(is.na(count_mat$p)) == 1){
-    mode_mid = count_mat$mid[is.na(count_mat$p)]
-    mid_coexist = cbind(mode_mid, mode_mid, sum(count_mat$count))
-  }
-  else{
-    mode_mid = count_mat$mid[1]
-    mid_coexist = cbind(count_mat$mid, mode_mid, count_mat$count)
-  }
-  rownames(mid_coexist) = NULL
-  #end = Sys.time()
-  #print(end - start)
-  return(mid_coexist)
-}
 
 #' @title disagree_sites
 #'
@@ -275,28 +210,170 @@ mid_correct_input = function(cells,cluster,gene_isoform){
   return(out)
 }
 
-mid_coexist = function(data){
-  total = sort(table(data$mid),decreasing = TRUE)
-  total = names(total)
+#' @title mid_coexist_fast
+#' Collapse per-(cell, cluster) mids into a consensus and coexistence map (fast)
+#'
+#' @description
+#' Given per-cell assignments of clone/lineage IDs (`mid`) within clusters, this
+#' computes (1) a **consensus mid** for each `(cell, cluster)` and
+#' (2) an aggregated **coexistence map** counting how often a source mid
+#' maps to a (possibly collapsed) target mid. Ties are broken by within-group
+#' count, then by global mid size.
+#'
+#' @param data data.frame or data.table with at least these columns:
+#' \itemize{
+#'   \item \code{cell}: cell/barcode identifier
+#'   \item \code{cluster}: cluster/partition label for the cell
+#'   \item \code{mid}: clone/lineage identifier
+#' }
+#'
+#' @details
+#' This function follows a two-step strategy per \code{(cell, cluster)}:
+#'
+#' \enumerate{
+#'   \item Compute counts per \code{mid}; rank mids by descending count, then by
+#'         a global \emph{mid size} (from \code{mid_len()}); take the top 1–2.
+#'   \item If two mids are present and exactly one is a parent of the other
+#'         (according to \code{mid_group()} edges \code{c -> p}), collapse both to
+#'         the dominant direction's \emph{mode mid}; otherwise, map each observed
+#'         mid to the group's top-1 \emph{mode mid}.
+#' }
+#'
+#' Expectations for helpers:
+#' \itemize{
+#'   \item \code{mid_len(total)} returns a two-column object with columns
+#'         \code{mid}, \code{size}.
+#'   \item \code{mid_group(total)} returns a two-column object with columns
+#'         \code{c} (child), \code{p} (parent). It may be empty; in that case,
+#'         no directed collapsing occurs.
+#' }
+#'
+#' Notes:
+#' \itemize{
+#'   \item If a \code{mid} has \code{size = NA}, it is treated as \code{-Inf} for ordering.
+#'   \item The consensus column is named \code{concensus} (intentional spelling to
+#'         match downstream code).
+#' }
+#'
+#' @return A list of two \code{data.table}s:
+#' \describe{
+#'   \item{\code{concensus}}{Columns: \code{cell}, \code{cluster}, \code{concensus} (the mode mid).}
+#'   \item{\code{coexist}}{Columns: \code{from}, \code{to}, \code{count}; aggregated counts of
+#'         mappings after the collapse/mapping rules above.}
+#' }
+#'
+#' @import data.table
+#'
+#' @examples
+#' \dontrun{
+#' # data: data.frame/data.table with columns cell, cluster, mid
+#' res <- mid_coexist_fast(data)
+#' concensus_dt <- res[[1]]
+#' coexist_dt   <- res[[2]]
+#' }
+#'
+#' @export
 
-  len = mid_len(total)
-  parent = mid_group(total)
+mid_coexist_fast <- function(data) {
+  # Precompute once (same as your pipeline)
+  total  <- names(sort(table(data$mid), decreasing = TRUE))
+  len    <- mid_len(total)        # expects cols: mid, size
+  parent <- mid_group(total)      # expects cols: c (child), p (parent)
 
-  data = data %>% group_by(cell,cluster) %>%
-    reframe(coexist = mid_count(mid,total,parent,len),.groups = "drop")
-  coexist = as.data.frame(data$coexist)
-  colnames(coexist) = c("from","to","count")
-  coexist$count = as.numeric(coexist$count)
-  concensus = as.data.frame(cbind(data[,c("cell","cluster")],
-                                  coexist[,"to",drop = FALSE])) %>%
-                                  group_by(cell,cluster) %>%
-                                  summarise(concensus = unique(to),.groups = "drop")
+  DT  <- as.data.table(data)
+  LEN <- as.data.table(len);    setnames(LEN, c("mid","size"))
+  P   <- as.data.table(parent); setnames(P,   c("c","p"))
+  if (nrow(P)) setkey(P, c, p)
 
-  coexist = coexist %>% group_by(from,to) %>%
-    summarise(count = sum(count),.groups = "drop")
-  return(list(concensus,coexist))
+  # 1) counts per (cell, cluster, mid)
+  CNT <- DT[, .N, by = .(cell, cluster, mid)]
+  CNT <- LEN[CNT, on = "mid"]
+  CNT[is.na(size), size := -Inf]                 # safe ordering if size NA
+  setorder(CNT, cell, cluster, -N, -size)
+
+  # 2) top-2 rows per group
+  TOP2 <- CNT[, head(.SD, 2L), by = .(cell, cluster)]
+
+  # split groups with 1 vs 2 mids
+  NG      <- TOP2[, .N, by = .(cell, cluster)]
+  groups1 <- TOP2[NG[N == 1L], on = .(cell, cluster)]
+  groups2 <- TOP2[NG[N == 2L], on = .(cell, cluster)]
+
+  # 3) groups with one mid: (mid -> mid, count)
+  res_one  <- groups1[, .(from = mid, to = mid, count = N)]
+  cons_one <- groups1[, .(cell, cluster, concensus = mid)]
+
+  # 4) groups with two mids: check parent relation both directions
+  groups2[, other_mid := mid[.N:1L], by = .(cell, cluster)]
+  if (nrow(P)) {
+    groups2[, is_child_of_other := P[.SD, on = .(c = mid, p = other_mid), .N, by = .EACHI]$N > 0]
+  } else {
+    groups2[, is_child_of_other := FALSE]
+  }
+
+  # >>> FIX: compute locals inside {...} and use them <<<
+  CONS2 <- groups2[, {
+    hd <- sum(is_child_of_other) == 1L
+    mm <- if (hd) other_mid[is_child_of_other][1L] else mid[1L]
+    sc <- sum(N)
+    .(has_dir = hd, mode_mid = mm, sum_count = sc)
+  }, by = .(cell, cluster)]
+
+  # collapse if directed; otherwise map both to top1
+  res_two_collapse <- CONS2[has_dir == TRUE,
+                            .(from = mode_mid, to = mode_mid, count = sum_count)]
+  res_two_map <- groups2[CONS2[has_dir == FALSE], on = .(cell, cluster)][
+    , .(from = mid, to = mode_mid, count = N)]
+
+  coexist <- rbindlist(list(res_one, res_two_collapse, res_two_map), use.names = TRUE, fill = TRUE)
+  coexist <- coexist[, .(count = sum(as.numeric(count))), by = .(from, to)]
+
+  concensus <- rbindlist(
+    list(cons_one, CONS2[, .(cell, cluster, concensus = mode_mid)]),
+    use.names = TRUE, fill = TRUE
+  )
+
+  list(concensus, coexist)
 }
 
+#' @title isoform_corres
+#' Infer isoform correspondence from a coexistence count matrix
+#'
+#' @description
+#' Builds a row-wise mapping from each isoform (row) to its most likely
+#' corresponding isoform(s) (column) using a square coexistence matrix of
+#' pairwise counts, with optional dispute resolution to drop unreliable
+#' target columns before finalizing the map.
+#'
+#' @details
+#' Workflow:
+#' \enumerate{
+#'   \item Identify a set of \emph{trustworthy targets}: keep columns whose
+#'         diagonal count is strictly greater than twice their total off-diagonal
+#'         mass, i.e. \eqn{M_{ii} > 2 \sum_{j \neq i} M_{ji}}.
+#'   \item Initial mapping: for each row, pick the target column among the
+#'         trustworthy set with the largest count (ties broken by first match);
+#'         rows with all-zero counts map to \code{NA}.
+#'   \item Dispute resolution: if any row maps to a different column than itself,
+#'         call \code{disagree_sites(from, to)} and, for columns where
+#'         \code{wrong > correct} and \code{disagree * 3 > wrong}, drop those
+#'         columns from the trustworthy set and recompute the mapping restricted
+#'         to the remaining targets.
+#' }
+#'
+#' @param coexist_matrix A square numeric matrix of coexistence counts with
+#'   matching row and column names (isoform identifiers). Diagonal entries
+#'   represent self-coexistence.
+#'
+#' @importFrom dplyr filter
+#' @importFrom magrittr %>%
+#'
+#' @return A two-column \code{data.frame} with row names set to \code{from}:
+#'   \describe{
+#'     \item{\code{from}}{Row isoform identifier.}
+#'     \item{\code{to}}{Mapped target isoform identifier (or \code{NA} if no evidence).}
+#'   }
+#'
 isoform_corres = function(coexist_matrix){
   isoform_coexist_filter <- cbind(diag(coexist_matrix),
                                   rowSums(coexist_matrix)-diag(coexist_matrix))
@@ -437,12 +514,45 @@ isoform_correct <- function(gene_isoform,preserve_mid){
   return(out[!is.na(out$start),])
 }
 
+#' @title cells_mid_correct
+#' Correct per-cell isoform assignments using mid-level consensus and coexistence
+#'
+#' @description
+#' Constructs per-(cell, cluster) inputs, computes consensus mids and their
+#' coexistence using \code{mid_coexist_fast()}, derives an isoform correspondence
+#' map from the coexistence matrix, and applies isoform-level corrections.
+#'
+#' @details
+#' Steps:
+#' \enumerate{
+#'   \item Build input with \code{mid_correct_input(cells, cluster, gene_isoform)}.
+#'   \item Run \code{mid_coexist_fast()} to obtain a consensus mid per group and
+#'         a long table of mid-to-mid coexistence counts.
+#'   \item If multiple mid pairs exist, convert to a square matrix with
+#'         \code{long2square(..., symmetric = FALSE)}, infer the correspondence
+#'         via \code{isoform_corres()}.
+#'   \item Join consensus to the input, attach \code{polyA}, and apply
+#'         \code{isoform_correct(data, corres)} to produce corrected isoform calls.
+#' }
+#'
+#' @param cells A vector of cell/barcode identifiers.
+#' @param cluster A vector of cluster labels aligned with \code{cells}.
+#' @param gene_isoform Isoform annotation aligned with \code{cells} (format as
+#'   required by \code{mid_correct_input()}).
+#' @param polyA A numeric (or logical) vector aligned with \code{cells} giving
+#'   poly(A) evidence to carry through to the output.
+#'
+#' @importFrom dplyr left_join select
+#'
+#' @return A \code{data.frame} of per-(cell, cluster) corrected isoform data
+#'   after applying the consensus/coexistence-derived correspondence map.
+#'
 cells_mid_correct <- function(cells,cluster,gene_isoform,polyA){
   data = mid_correct_input(cells,cluster,gene_isoform)
 
-  out = mid_coexist(data)
-  concensus = out[[1]]
-  coexist = out[[2]]
+  out = mid_coexist_fast(data)
+  concensus = as.data.frame(out[[1]])
+  coexist = as.data.frame(out[[2]])
 
   if(nrow(coexist) == 1){
     corres = as.data.frame(coexist %>% dplyr::select(-count))
@@ -461,6 +571,32 @@ cells_mid_correct <- function(cells,cluster,gene_isoform,polyA){
   return(data)
 }
 
+#' @title cells_nomid_correct
+#' Summarize per-(cell, cluster) intervals without mid information
+#'
+#' @description
+#' Produces a compact per-(cell, cluster) summary when mid assignments are
+#' unavailable: the minimum \code{start}, maximum \code{end}, the number of
+#' contributing records (\code{size}), and the mean \code{polyA}.
+#'
+#' @details
+#' The inputs are combined and then grouped by \code{cell, cluster}. For each
+#' group, it returns: \code{start = min(start)}, \code{end = max(end)},
+#' \code{size = n()}, and \code{polyA = mean(polyA)}.
+#'
+#' @param cells A vector of cell/barcode identifiers.
+#' @param cluster A vector of cluster labels aligned with \code{cells}.
+#' @param gene_isoform A two-column object (matrix/data.frame) giving
+#'   \code{start} and \code{end} coordinates aligned with \code{cells}.
+#' @param polyA A numeric (or logical) vector aligned with \code{cells} used to
+#'   compute per-group mean poly(A) support.
+#'
+#' @importFrom dplyr group_by summarise
+#' @importFrom magrittr %>%
+#'
+#' @return A \code{data.frame} with columns \code{cell}, \code{cluster},
+#'   \code{start}, \code{end}, \code{size}, and \code{polyA}.
+#'
 cells_nomid_correct <- function(cells,cluster,gene_isoform,polyA){
   data = as.data.frame(cbind(cells,cluster,gene_isoform,polyA))
   colnames(data) = c("cell","cluster","start","end","polyA")
@@ -513,6 +649,56 @@ site_recover <- function(start,end,mid = NULL,sites = NULL,flank = 5,sep = ",",s
     return(splice_sites)
 }
 
+#' @title cells_isoform_correct
+#' Correct and assign isoforms per (cell, cluster)
+#'
+#' @description
+#' Generates corrected isoform calls for each \code{(cell, cluster)} by combining
+#' mid-level correction (when splice-site information is available) or by
+#' summarizing intervals (when no mid information exists), followed by recovery
+#' of isoform identifiers from start/end positions and splice sites.
+#'
+#' @details
+#' Workflow:
+#' \enumerate{
+#'   \item If \code{gene_isoform} has >2 columns (implying splice-site structure):
+#'         \itemize{
+#'           \item Extract splice-site names from column 2 to (n-1).
+#'           \item Run \code{cells_mid_correct()} to obtain consensus mids and corrected
+#'                 per-(cell, cluster) records.
+#'           \item For each row, recover isoform identity using
+#'                 \code{site_recover(start, end, mid, splice_sites)}.
+#'         }
+#'   \item Otherwise:
+#'         \itemize{
+#'           \item Summarize per-group intervals via \code{cells_nomid_correct()}.
+#'           \item Recover isoforms using \code{site_recover(start, end)}.
+#'           \item Assign a placeholder mid of \code{"null"}.
+#'         }
+#'   \item Drop empty results and remove \code{start, end} columns after recovery.
+#' }
+#'
+#' @param cells A vector of cell/barcode identifiers.
+#' @param cluster A vector of cluster labels aligned with \code{cells}.
+#' @param gene_isoform A matrix/data.frame giving isoform structure. If it has
+#'   more than two columns, internal splice-site columns are used for isoform
+#'   recovery.
+#' @param polyA A numeric (or logical) vector aligned with \code{cells} used to
+#'   track poly(A) evidence.
+#'
+#' @importFrom dplyr select
+#' @importFrom magrittr %>%
+#'
+#' @return A \code{data.frame} of corrected isoform calls per (cell, cluster),
+#'   including:
+#'   \describe{
+#'     \item{\code{cell}}{Cell identifier.}
+#'     \item{\code{cluster}}{Cluster label.}
+#'     \item{\code{mid}}{Consensus mid (or \code{"null"} if unavailable).}
+#'     \item{\code{size, polyA}}{Group size and mean poly(A) support.}
+#'     \item{\code{isoform}}{Recovered isoform identifier.}
+#'   }
+#'
 cells_isoform_correct <- function(cells,cluster,gene_isoform,polyA){
   if(ncol(gene_isoform) > 2){
     splice_sites = colnames(gene_isoform)[2:(ncol(gene_isoform)-1)]

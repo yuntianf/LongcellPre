@@ -4,7 +4,7 @@
 \alias{adapter_dis}
 \title{adapter_dis}
 \usage{
-adapter_dis(data, UMI_len = 10, flank = 1)
+adapter_dis(data)
 }
 \arguments{
 \item{data}{The output from the barcode match step. Should be a dataframe contains edit distance and

@@ -4,10 +4,10 @@
 \alias{readBam}
 \title{readBam}
 \usage{
-readBam(bam_path, chr, start, end, strand, map_qual = 30)
+readBam(bamFile, chr, start, end, strand, map_qual = 30)
 }
 \arguments{
-\item{bam_path}{The path of the input bam file}
+\item{bamFile}{The input bam file read by Rsamtools}
 
 \item{chr}{The chromosome of reads located in, should be chr}
 

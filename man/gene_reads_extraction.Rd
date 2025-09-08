@@ -5,7 +5,7 @@
 \title{gene_reads_extraction}
 \usage{
 gene_reads_extraction(
-  bam_path,
+  bamFile,
   gene_bed,
   genome,
   toolkit = 5,
@@ -17,7 +17,7 @@ gene_reads_extraction(
 )
 }
 \arguments{
-\item{bam_path}{The path of the input bam file}
+\item{bamFile}{The input bam file read by Rsamtools}
 
 \item{gene_bed}{The gene bed annotation, should be a dataframe}
 
