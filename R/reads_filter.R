@@ -73,45 +73,19 @@ isoform_dis_cluster <- function(isoforms,thresh = 20,eps = 20,
 #' @param ratio The estimated frequency for UMIs which are enriched of sequencing errors and
 #' couldn't be clustered correctly and become singletons
 #' @return A vector to indicating whether the cluster is filtered out or not
-size_filter_error <- function(size,ratio = 0.1){
-    size = as.numeric(size)
-    if(sum(is.na(size))){
-        stop("size must be integer!")
-    }
-    if(length(size) == 1){
-        return(1)
-    }
-    if(max(size) == 1){
-      return(rep(1,length(size)))
-    }
-    size = as.data.frame(cbind(1:length(size),size))
-    colnames(size) = c("id","size")
-    size = size[order(size$size),]
+size_filter_error <- function(size, ratio = 0.1) {
+  size <- as.numeric(size)
+  if (any(is.na(size))) stop("size must be integer!")
+  n <- length(size)
+  if (n <= 1L) return(1)
+  if (max(size) == 1) return(rep(1, n))
 
-    size$weight = size_filter_cpp(size$size,ratio)
-    size = size[order(size$id),]
-    return(size$weight)
+  ord <- order(size)                   # ascending, like your code
+  w_sorted <- size_filter_cpp(size[ord], ratio)  # your existing C++ fn
+  w <- numeric(n)
+  w[ord] <- w_sorted
+  w
 }
-
-
-#' #' @title isoform_size_filter
-#' #'
-#' #' @description Filter out singletons and small clusters which are not likely to be
-#' #' correctly clustered, given the distribution of cluster size.
-#' #' @param size A vector to store the size for each cluster.
-#' #' @param ratio The estimated frequency for UMIs which are enriched of sequencing errors and
-#' #' couldn't be clustered correctly and become singletons
-#' #' @return A numeric vector to indicating whether the cluster is filtered out or not
-#' isoform_size_filter <- function(isoforms,size,ratio = 0.1){
-#'   cluster = isoform_dis_cluster(isoforms,thresh = 10,eps = 10)
-#'
-#'   isoform_size = as.data.frame(cbind(cluster,size))
-#'   colnames(isoform_size) = c("cluster","size")
-#'
-#'   isoform_size = isoform_size %>% group_by(cluster) %>%
-#'     mutate(weight = size_filter_error(size,ratio))
-#'   return(isoform_size$weight)
-#' }
 
 
 #' @title isoform_size_filter
@@ -123,36 +97,27 @@ size_filter_error <- function(size,ratio = 0.1){
 #' @inheritParams isoform_dis_cluster
 #' @importFrom dplyr row_number
 #' @return A numeric vector to indicating whether the cluster is filtered out or not
-isoform_size_filter <- function(isoforms,size,ratio = 0.1,...){
-  if(length(isoforms) == 1){
+isoform_size_filter <- function(isoforms, size, ratio = 0.1, ...,
+                                   thresh = 10, eps = 10) {
+  n <- length(isoforms)
+  if (n == 0L) return(integer())
 
-  }
-  len = isos_len(isoforms,...)
-  cluster = isoform_dis_cluster(isoforms,thresh = 10,eps = 10)
+  len     <- isos_len_cpp(isoforms)                      # now fast (C++)
+  cluster <- isoform_dis_cluster(isoforms, thresh, eps)   # micro-optimized
 
-  isoform_size = as.data.frame(cbind(cluster,size,len))
-  colnames(isoform_size) = c("cluster","size","len")
+  dt <- data.table(cluster = cluster,
+                   size    = as.numeric(size),
+                   len     = as.numeric(len),
+                   ord     = seq_len(n))
 
-  cluster_weight = isoform_size %>% group_by(cluster) %>%
-                 mutate(weight = size_filter_error(size,ratio)) %>%
-                 group_by(cluster) %>% summarise(weight = sum(weight),.groups = "drop")
+  cw <- dt[, .(weight = sum(size_filter_error(size, ratio))), by = cluster]
 
-  result <- isoform_size %>%
-    mutate(id = 1:nrow(isoform_size)) %>%
-    inner_join(cluster_weight, by = "cluster") %>%
-    group_by(cluster) %>%
-    arrange(-size,-len) %>%
-    mutate(rank = row_number())%>%
-    mutate(count = ifelse(rank <= weight,1,0)) %>%
-    ungroup() %>% arrange(id)
-
-    # arrange(desc(len), .by_group = TRUE) %>%
-    # mutate(rank = row_number()) %>%
-    # filter(rank <= weight) %>% # Keep only top n_longest per cluster
-    # dplyr::select(-rank,-n_longest) %>%             # Drop the helper column
-    # ungroup()
-
-  return(result$count)
+  setorder(dt, cluster, -size, -len)
+  dt[, rank := seq_len(.N), by = cluster]
+  dt[cw, weight := i.weight, on = "cluster"]
+  dt[, count := as.integer(rank <= weight)]
+  setorder(dt, ord)
+  dt[["count"]]
 }
 
 #' @title cells_isoforms_size_filter
@@ -163,71 +128,19 @@ isoform_size_filter <- function(isoforms,size,ratio = 0.1,...){
 #' @param ratio The estimated frequency for UMIs which are enriched of sequencing errors and
 #' couldn't be clustered correctly and become singletons
 #' @return A dataframe with isoform count after cluster size filtering for each cell
-cells_isoforms_size_filter <- function(cell_isoform_table,ratio = 0.1){
-  cell_isoform_table = cell_isoform_table %>%
-                       group_by(cell,mid) %>%
-                       mutate(weight = isoform_size_filter(isoform,size,ratio),
-                              .groups = "drop")
-  cell_isoform_table = cell_isoform_table %>%
-                       group_by(cell,isoform) %>%
-                       summarise(size = sum(size),cluster = n(),count = sum(weight),
-                                 polyA = sum(polyA*weight)/sum(weight),
-                                 .groups = "drop")
-  return(cell_isoform_table)
+cells_isoforms_size_filter <- function(cell_isoform_table, ratio = 0.1, ...,
+                                          thresh = 10, eps = 10) {
+  dt <- as.data.table(cell_isoform_table)
+  dt[, weight := isoform_size_filter(isoform, size, ratio, ...,
+                                        thresh = thresh, eps = eps),
+     by = .(cell, mid)]
+  dt[, {
+    sw <- sum(weight)
+    .(size    = sum(size),
+      cluster = .N,
+      count   = sw,
+      polyA   = if (sw > 0) sum(polyA * weight) / sw else NA_real_)
+  }, by = .(cell, isoform)]
 }
 
-# isoforms_size_filter <- function(isoform_table,relation,
-#                                  alpha = 0.05,ratio = 0.2,
-#                                  isoform = "isoform",mid = "mid",
-#                                  size = "size",
-#                                  polyA = "polyA"){
-#     reads_filter <- lapply(unique(isoform_table[,mid]),function(i){
-#         sub = isoform_table[isoform_table[,mid] == i,]
-#         cluster = isoform_dis_cluster(sub[,isoform],thresh = 10,eps = 10)
-#         weight = lapply(unique(cluster),function(x){
-#             id = which(cluster == x)
-#             sub_weight = 1 - size_filter(sub[id,size],relation = relation,
-#                                      alpha = alpha, ratio = ratio)
-#             return(cbind(id,sub_weight))
-#         })
-#         weight = as.data.frame(do.call(rbind,weight))
-#         colnames(weight) = c("id","weight")
-#         weight = weight[order(weight$id),]
-#         sub$weight = weight$weight
 
-#         sub = sub %>%
-#               group_by(across(all_of(c(isoform)))) %>%
-#               summarise(size = sum(across(all_of(size))),
-#                         ### just for benchmark ###
-#                         cluster = n(),
-#                         ### just for benchmark ###
-#                         count = sum(weight),
-#                         polyA = mean(!! rlang::sym(polyA)),
-#                        .groups = "drop")
-#         #if(sum(sub$count == 0) > 0){
-#         #    sub = sub[-which(sub$count == 0),]
-#         #}
-#         return(sub)
-#     })
-#     reads_filter <- as.data.frame(do.call(rbind,reads_filter))
-#     return(reads_filter)
-# }
-
-# cells_isoforms_size_filter <- function(cell_isoform_table,
-#                                        relation,alpha = 0.05,ratio = 0.2,
-#                                        cell = "cell",isoform = "isoform",
-#                                        mid = "mid",size = "size",
-#                                        polyA = "polyA"){
-#     reads_filter = lapply(unique(cell_isoform_table[,cell]),function(i){
-#         sub = cell_isoform_table[cell_isoform_table[,cell] == i,]
-#         filter = isoforms_size_filter(isoform_table = sub,relation = relation,
-#                                       alpha = alpha,ratio = ratio,
-#                                       mid = mid,isoform = isoform,
-#                                       size = size,polyA = polyA)
-#         filter = cbind(i,filter)
-#         colnames(filter)[1] = cell
-#         return(filter)
-#     })
-#     reads_filter = do.call(rbind,reads_filter)
-#     return(reads_filter)
-# }

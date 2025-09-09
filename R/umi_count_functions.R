@@ -40,7 +40,7 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
 
   gene_isoform = cells_isoforms_size_filter(cell_isoform_table = gene_isoform,
                                             ratio = filter_ratio)
-  return(gene_isoform)
+  return(as.data.frame(gene_isoform))
 }
 
 #' @title gene_umi_count

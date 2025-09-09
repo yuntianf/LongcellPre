@@ -649,6 +649,113 @@ site_recover <- function(start,end,mid = NULL,sites = NULL,flank = 5,sep = ",",s
     return(splice_sites)
 }
 
+#' @title cells_build_isoform_dt
+#' Build isoform strings per (row) with exact site-pairing semantics (fast, data.table)
+#'
+#' @description
+#' Adds an `isoform` column to a table of `{start, end, mid}` using splice-site
+#' structure when available. The implementation matches the original
+#' `site_recover()` semantics while avoiding `apply(..., 1, ...)` and repeated
+#' parsing for speed.
+#'
+#' @details
+#' Behavior by case:
+#' \itemize{
+#'   \item If \code{sites} is \code{NULL}, each row's isoform is simply
+#'         \code{"start,end"} (after trimming spaces).
+#'   \item If \code{sites} is provided, \code{mid} is parsed as
+#'         \code{as.logical(as.numeric(strsplit(mid, \",\")))}, so
+#'         \code{0 -> FALSE}, non-zero \code{-> TRUE}, and \code{NA -> NA}.
+#'         For \strong{boundary filling}, indices with non-NA \code{mid} are used
+#'         as a mask: if \code{start == -1}, set \code{start = min(sites[mask]) - flank};
+#'         if \code{end == -1}, set \code{end = max(sites[mask]) + flank}.
+#'         If \code{start} is \code{NA} in this mode, the result is \code{NA}.
+#'         For \strong{interior selection}, \code{NA} entries in \code{mid} are set to
+#'         \code{FALSE} and only \code{TRUE} positions are kept: the sequence
+#'         \code{c(start, sites[TRUE], end)} is then paired \emph{in chunks of two}
+#'         (i.e., \code{(1,2)}, \code{(3,4)}, \code{(5,6)}, ...) to form
+#'         \code{"a,b|c,d|..."} using \code{sep} between numbers and \code{split}
+#'         between pairs. A length mismatch between parsed \code{mid} and
+#'         \code{sites} raises an error.
+#' }
+#'
+#' @param data A \code{data.frame} or \code{data.table} with columns:
+#'   \code{start}, \code{end}, and (when \code{sites} is not \code{NULL}) \code{mid}.
+#' @param sites \code{NULL} or a vector of splice-site coordinates (numeric or
+#'   coercible to numeric) whose length must match the number of entries parsed
+#'   from each \code{mid}.
+#' @param flank Integer; number of bases to extend when filling \code{start == -1}
+#'   and/or \code{end == -1}. Default \code{5}.
+#' @param sep String used between endpoints within a pair (default \code{","}).
+#' @param split String used between consecutive pairs (default \code{"|"}).
+#'
+#' @importFrom data.table as.data.table
+#'
+#' @return The input as a \code{data.table} with an added \code{isoform} column.
+#'   Assignment is done by reference when possible; the function returns
+#'   \code{dt[]} for convenience.
+cells_build_isoform_dt <- function(data, sites = NULL, flank = 5L,
+                                   sep = ",", split = "|") {
+  dt <- as.data.table(data)
+
+  if (is.null(sites)) {
+    s_num <- suppressWarnings(as.numeric(dt$start))
+    e_num <- suppressWarnings(as.numeric(dt$end))
+    dt[, isoform := gsub(" ", "", paste(s_num, e_num, sep = sep), fixed = TRUE)]
+    return(dt[])
+  }
+
+  sites_num <- suppressWarnings(as.numeric(sites))
+  if (anyNA(sites_num)) stop("`sites` must be coercible to numeric.")
+
+  s_num <- suppressWarnings(as.numeric(dt$start))
+  e_num <- suppressWarnings(as.numeric(dt$end))
+
+  mid_chr <- as.character(dt$mid); mid_chr[is.na(mid_chr)] <- ""
+  mids_list <- strsplit(mid_chr, ",", fixed = TRUE)
+
+  mids_num_list <- lapply(mids_list, function(x)
+    if (length(x)) suppressWarnings(as.numeric(x)) else numeric(0L))
+  mids_log_list <- lapply(mids_num_list, function(x) suppressWarnings(as.logical(x)))
+
+  if (any(vapply(mids_log_list, length, 1L) != length(sites_num))) {
+    stop("The size of splicing sites and binary indicator don't match!")
+  }
+
+  # Boundary mask: non-NA
+  masks <- lapply(mids_log_list, function(m) !is.na(m))
+  first_idx <- vapply(masks, function(m) if (any(m)) which(m)[1L] else NA_integer_, 1L)
+  last_idx  <- vapply(masks, function(m) if (any(m)) tail(which(m), 1L) else NA_integer_, 1L)
+
+  repl_s <- !is.na(s_num) & s_num == -1 & !is.na(first_idx)
+  repl_e <- !is.na(e_num) & e_num == -1 & !is.na(last_idx)
+  if (any(repl_s)) s_num[repl_s] <- sites_num[first_idx[repl_s]] - flank
+  if (any(repl_e)) e_num[repl_e] <- sites_num[last_idx[repl_e]] + flank
+
+  dt[, isoform := vapply(seq_len(.N), function(i) {
+    si <- s_num[i]
+    if (is.na(si)) return(NA_character_)
+    ei <- e_num[i]
+    m  <- mids_log_list[[i]]
+    if (length(m)) m[is.na(m)] <- FALSE
+    seg <- c(si, sites_num[if (length(m)) m else FALSE], ei)
+
+    # Pair in chunks of two (matrix(nrow=2) semantics)
+    k <- length(seg) %/% 2L
+    if (k == 0L) {
+      paste(si, ei, sep = sep)
+    } else {
+      left  <- seg[2L * seq_len(k) - 1L]
+      right <- seg[2L * seq_len(k)]
+      paste(paste(left, right, sep = sep), collapse = split)
+    }
+  }, FUN.VALUE = character(1L))]
+
+  dt[, isoform := gsub(" ", "", isoform, fixed = TRUE)]
+  dt[]
+}
+
+
 #' @title cells_isoform_correct
 #' Correct and assign isoforms per (cell, cluster)
 #'
@@ -706,9 +813,10 @@ cells_isoform_correct <- function(cells,cluster,gene_isoform,polyA){
     if(nrow(data) == 0){
       return(NULL)
     }
-    data$isoform <- apply(data,1,function(x){
-      site_recover(x["start"],x["end"],x["mid"],splice_sites)
-    })
+    #data$isoform <- apply(data,1,function(x){
+    #  site_recover(x["start"],x["end"],x["mid"],splice_sites)
+    #})
+    data = cells_build_isoform_dt(data,sites = splice_sites, flank = 5L,sep = ",", split = "|")
   }
   else{
     splice_sites = NULL
@@ -716,12 +824,14 @@ cells_isoform_correct <- function(cells,cluster,gene_isoform,polyA){
     if(nrow(data) == 0){
       return(NULL)
     }
-    data$isoform <- apply(data,1,function(x){
-      site_recover(x["start"],x["end"])
-    })
+    #data$isoform <- apply(data,1,function(x){
+    #  site_recover(x["start"],x["end"])
+    #})
+    data = cells_build_isoform_dt(data, flank = 5L,sep = ",", split = "|")
     data$mid = "null"
   }
 
+  data = as.data.frame(data)
   data <- na.omit(data) %>% dplyr::select(-c(start,end))
   return(data)
 }
