@@ -96,6 +96,7 @@ size_filter_error <- function(size, ratio = 0.1) {
 #' from the same UMI
 #' @inheritParams isoform_dis_cluster
 #' @importFrom dplyr row_number
+#' @importFrom Longcellsrc isos_len_cpp
 #' @return A numeric vector to indicating whether the cluster is filtered out or not
 isoform_size_filter <- function(isoforms, size, ratio = 0.1, ...,
                                    thresh = 10, eps = 10) {

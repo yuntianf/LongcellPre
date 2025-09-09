@@ -74,6 +74,7 @@ mid_len = function(mid,sep = ","){
 #'
 #' @inheritParams mid_len
 #' @importFrom Matrix Matrix
+#' @importFrom Longcellsrc matrix_xor
 #' @return A dataframe with two columns, the first column denotes the middle splicing site string,
 #' the second denotes the splicing site string that can transform to this splicing site string by
 #' truncations.
