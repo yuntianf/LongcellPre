@@ -97,10 +97,10 @@ mid_group = function (mid, sep = ",")
 
   NA_flag = (mask %*% t(mask) - rowSums(mask)) == 0
   ones_flag = matrix_xor(mat)
-  cat("The size of ones_flag is ",dim(ones_flag), "!\n")
+  # cat("The size of ones_flag is ",dim(ones_flag), "!\n")
   result = Matrix(NA_flag & ones_flag, sparse = TRUE)
-  cat("The size of result is ",dim(result), "!\n")
-  print(result)
+  # cat("The size of result is ",dim(result), "!\n")
+  # print(result)
   result = as.data.frame(Matrix::summary(as(result, "generalMatrix")))
   result = result %>% filter(i != j) %>% dplyr::select(-x)
 
@@ -283,12 +283,12 @@ mid_correct_input = function(cells,cluster,gene_isoform){
 mid_coexist_fast <- function(data) {
   # Precompute once (same as your pipeline)
   total  <- names(sort(table(data$mid), decreasing = TRUE))
-  cat("mid_len\n")
+  # cat("mid_len\n")
   len    <- mid_len(total)        # expects cols: mid, size
-  cat("mid_group\n")
+  # cat("mid_group\n")
   parent <- mid_group(total)      # expects cols: c (child), p (parent)
 
-  cat("mid_group finish\n")
+  # cat("mid_group finish\n")
   DT  <- as.data.table(data)
   LEN <- as.data.table(len);    setnames(LEN, c("mid","size"))
   P   <- as.data.table(parent); setnames(P,   c("c","p"))
@@ -557,12 +557,12 @@ isoform_correct <- function(gene_isoform,preserve_mid){
 #'   after applying the consensus/coexistence-derived correspondence map.
 #'
 cells_mid_correct <- function(cells,cluster,gene_isoform,polyA){
-  cat("Start to build the middle sites input\n")
+  # cat("Start to build the middle sites input\n")
   data = mid_correct_input(cells,cluster,gene_isoform)
 
-  cat("Start to build coexistence table for middle sites\n")
+  # cat("Start to build coexistence table for middle sites\n")
   out = mid_coexist_fast(data)
-  cat("Finish the coexistence table for middle sites\n")
+  # cat("Finish the coexistence table for middle sites\n")
   concensus = as.data.frame(out[[1]])
   coexist = as.data.frame(out[[2]])
 
@@ -579,7 +579,7 @@ cells_mid_correct <- function(cells,cluster,gene_isoform,polyA){
   data = left_join(data,concensus,by = c("cell","cluster"))
   data$polyA = polyA
   # return(data)
-  cat("Start to correct isoforms\n")
+  # cat("Start to correct isoforms\n")
   data = isoform_correct(data,corres)
   return(data)
 }
@@ -821,9 +821,9 @@ cells_build_isoform_dt <- function(data, sites = NULL, flank = 5L,
 #'
 cells_isoform_correct <- function(cells,cluster,gene_isoform,polyA){
   if(ncol(gene_isoform) > 2){
-    cat("Start to prepare input\n")
+    # cat("Start to prepare input\n")
     splice_sites = colnames(gene_isoform)[2:(ncol(gene_isoform)-1)]
-    cat("Start to correct the middle sites\n")
+    # cat("Start to correct the middle sites\n")
     data = cells_mid_correct(cells,cluster,gene_isoform,polyA)
     if(nrow(data) == 0){
       return(NULL)
@@ -831,7 +831,7 @@ cells_isoform_correct <- function(cells,cluster,gene_isoform,polyA){
     #data$isoform <- apply(data,1,function(x){
     #  site_recover(x["start"],x["end"],x["mid"],splice_sites)
     #})
-    cat("Start to build isoform table\n")
+    # cat("Start to build isoform table\n")
     data = cells_build_isoform_dt(data,sites = splice_sites, flank = 5L,sep = ",", split = "|")
   }
   else{
