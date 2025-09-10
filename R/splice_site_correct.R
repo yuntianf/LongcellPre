@@ -97,9 +97,11 @@ mid_group = function (mid, sep = ",")
 
   NA_flag = (mask %*% t(mask) - rowSums(mask)) == 0
   ones_flag = matrix_xor(mat)
+  cat("The size of result is ",dim(ones_flag), "!\n")
   result = Matrix(NA_flag & ones_flag, sparse = TRUE)
+  cat("The size of result is ",dim(result), "!\n")
   result = as.data.frame(summary(as(result, "generalMatrix")))
-  print(head(result))
+
   if (length(result) > 0) {
     result = result %>% filter(i != j) %>% dplyr::select(-x)
     result = result[, c("j", "i")]
