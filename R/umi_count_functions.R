@@ -29,6 +29,7 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
   }
 
   # return(list(gene_cells_cluster,gene_isoform))
+  cat("Start to correct isoform!\n")
   gene_isoform = cells_isoform_correct(gene_cells_cluster$cell,
                                        gene_cells_cluster$cluster,
                                        gene_isoform,
@@ -38,6 +39,7 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
     return(gene_isoform)
   }
 
+  cat("Start to filter out singletons!\n")
   gene_isoform = cells_isoforms_size_filter(cell_isoform_table = gene_isoform,
                                             ratio = filter_ratio)
   return(as.data.frame(gene_isoform))
@@ -109,7 +111,7 @@ gene_umi_count <- function(cell_exon,qual,strand,bar = "barcode",
 
     gene_cells_cluster = as.data.frame(do.call(rbind,gene_cells_cluster))
     # return(gene_cells_cluster)
-    #cat("Clustering for UMI finished!\n")
+    cat("Clustering for UMI finished!\n")
     filter_ratio = mean(c(sum(qual[qual$needle < sim_thresh,"count"]),
                           sum(qual[qual$needle < sim_thresh+1,"count"])))/sum(qual$count)
     gene_isoform = isoform_correct_filter(gene_cells_cluster,filter_ratio,strand,
@@ -133,7 +135,7 @@ umi_count <- function(cell_exon,qual, gene_strand,
                       isoform = "isoform",polyA = "polyA",
                       sim_thresh = NULL, split = "|",sep = ",",
                       splice_site_thresh = 3,verbose = FALSE){
-    genes <- unique(cell_exon[,gene])
+    genes <- unique(as.character(cell_exon[[gene]]))
     genes_umi_count <- lapply(genes,function(i){
       if(verbose){
         cat(i,"\n")

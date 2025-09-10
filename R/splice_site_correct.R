@@ -7,6 +7,7 @@
 #' @param split The character to seperate different exons in the isoform representation.
 #' @param sep The character to seperate the start and end position of an exon in the isoform representation.
 #' @param splice_site_thresh The minimum number of occurance for a splice site to be preserved.
+#' @importFrom Longcellsrc splice_site_table_cpp
 #' @return A dataframe, the first and the last column stores the start and end position of each read,
 #' the middle columns store if each read has the splicing sites
 splice_site_table <- function(isoforms,

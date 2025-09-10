@@ -72,6 +72,7 @@ isoform_dis_cluster <- function(isoforms,thresh = 20,eps = 20,
 #' @param size A vector to store the size for each cluster.
 #' @param ratio The estimated frequency for UMIs which are enriched of sequencing errors and
 #' couldn't be clustered correctly and become singletons
+#' @importFrom Longcellsrc size_filter_cpp
 #' @return A vector to indicating whether the cluster is filtered out or not
 size_filter_error <- function(size, ratio = 0.1) {
   size <- as.numeric(size)
@@ -97,6 +98,7 @@ size_filter_error <- function(size, ratio = 0.1) {
 #' @inheritParams isoform_dis_cluster
 #' @importFrom dplyr row_number
 #' @importFrom Longcellsrc isos_len_cpp
+#' @import data.table
 #' @return A numeric vector to indicating whether the cluster is filtered out or not
 isoform_size_filter <- function(isoforms, size, ratio = 0.1, ...,
                                    thresh = 10, eps = 10) {
