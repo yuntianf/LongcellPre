@@ -810,7 +810,9 @@ cells_build_isoform_dt <- function(data, sites = NULL, flank = 5L,
 #'
 cells_isoform_correct <- function(cells,cluster,gene_isoform,polyA){
   if(ncol(gene_isoform) > 2){
+    cat("Start to prepare input\n")
     splice_sites = colnames(gene_isoform)[2:(ncol(gene_isoform)-1)]
+    cat("Start to correct the middle sites\n")
     data = cells_mid_correct(cells,cluster,gene_isoform,polyA)
     if(nrow(data) == 0){
       return(NULL)
@@ -818,6 +820,7 @@ cells_isoform_correct <- function(cells,cluster,gene_isoform,polyA){
     #data$isoform <- apply(data,1,function(x){
     #  site_recover(x["start"],x["end"],x["mid"],splice_sites)
     #})
+    cat("Start to build isoform table\n")
     data = cells_build_isoform_dt(data,sites = splice_sites, flank = 5L,sep = ",", split = "|")
   }
   else{
