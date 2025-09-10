@@ -550,8 +550,10 @@ isoform_correct <- function(gene_isoform,preserve_mid){
 #'   after applying the consensus/coexistence-derived correspondence map.
 #'
 cells_mid_correct <- function(cells,cluster,gene_isoform,polyA){
+  cat("Start to build the middle sites input\n")
   data = mid_correct_input(cells,cluster,gene_isoform)
 
+  cat("Start to build coexistence table for middle sites\n")
   out = mid_coexist_fast(data)
   concensus = as.data.frame(out[[1]])
   coexist = as.data.frame(out[[2]])
@@ -569,6 +571,7 @@ cells_mid_correct <- function(cells,cluster,gene_isoform,polyA){
   data = left_join(data,concensus,by = c("cell","cluster"))
   data$polyA = polyA
   # return(data)
+  cat("Start to correct isoforms\n")
   data = isoform_correct(data,corres)
   return(data)
 }
