@@ -97,9 +97,10 @@ mid_group = function (mid, sep = ",")
 
   NA_flag = (mask %*% t(mask) - rowSums(mask)) == 0
   ones_flag = matrix_xor(mat)
-  cat("The size of result is ",dim(ones_flag), "!\n")
+  cat("The size of ones_flag is ",dim(ones_flag), "!\n")
   result = Matrix(NA_flag & ones_flag, sparse = TRUE)
   cat("The size of result is ",dim(result), "!\n")
+  print(result)
   result = as.data.frame(summary(as(result, "generalMatrix")))
 
   if (length(result) > 0) {
