@@ -555,6 +555,7 @@ cells_mid_correct <- function(cells,cluster,gene_isoform,polyA){
 
   cat("Start to build coexistence table for middle sites\n")
   out = mid_coexist_fast(data)
+  cat("Finish the coexistence table for middle sites\n")
   concensus = as.data.frame(out[[1]])
   coexist = as.data.frame(out[[2]])
 
