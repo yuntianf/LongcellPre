@@ -74,7 +74,7 @@ mid_len = function(mid,sep = ","){
 #' @description group middle splicing sites which can transform to each other by truncations.
 #'
 #' @inheritParams mid_len
-#' @importFrom Matrix Matrix
+#' @importFrom Matrix Matrix summary
 #' @importFrom Longcellsrc matrix_xor
 #' @return A dataframe with two columns, the first column denotes the middle splicing site string,
 #' the second denotes the splicing site string that can transform to this splicing site string by
@@ -101,10 +101,10 @@ mid_group = function (mid, sep = ",")
   result = Matrix(NA_flag & ones_flag, sparse = TRUE)
   cat("The size of result is ",dim(result), "!\n")
   print(result)
-  result = as.data.frame(summary(as(result, "generalMatrix")))
+  result = as.data.frame(Matrix::summary(as(result, "generalMatrix")))
+  result = result %>% filter(i != j) %>% dplyr::select(-x)
 
   if (length(result) > 0) {
-    result = result %>% filter(i != j) %>% dplyr::select(-x)
     result = result[, c("j", "i")]
     colnames(result) = c("c", "p")
     result = result %>% mutate(c = mid[c], p = mid[p])
