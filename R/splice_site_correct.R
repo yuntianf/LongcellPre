@@ -99,6 +99,7 @@ mid_group = function (mid, sep = ",")
   ones_flag = matrix_xor(mat)
   result = Matrix(NA_flag & ones_flag, sparse = TRUE)
   result = as.data.frame(summary(as(result, "generalMatrix")))
+  print(head(result))
   if (length(result) > 0) {
     result = result %>% filter(i != j) %>% dplyr::select(-x)
     result = result[, c("j", "i")]
@@ -279,9 +280,12 @@ mid_correct_input = function(cells,cluster,gene_isoform){
 mid_coexist_fast <- function(data) {
   # Precompute once (same as your pipeline)
   total  <- names(sort(table(data$mid), decreasing = TRUE))
+  cat("mid_len\n")
   len    <- mid_len(total)        # expects cols: mid, size
+  cat("mid_group\n")
   parent <- mid_group(total)      # expects cols: c (child), p (parent)
 
+  cat("mid_group finish\n")
   DT  <- as.data.table(data)
   LEN <- as.data.table(len);    setnames(LEN, c("mid","size"))
   P   <- as.data.table(parent); setnames(P,   c("c","p"))
