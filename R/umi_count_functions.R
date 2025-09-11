@@ -29,7 +29,7 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
   }
 
   # return(list(gene_cells_cluster,gene_isoform))
-  cat("Start to correct isoform!\n")
+  # cat("Start to correct isoform!\n")
   gene_isoform = cells_isoform_correct(gene_cells_cluster$cell,
                                        gene_cells_cluster$cluster,
                                        gene_isoform,
@@ -39,7 +39,7 @@ isoform_correct_filter <- function(gene_cells_cluster,filter_ratio,strand,
     return(gene_isoform)
   }
 
-  cat("Start to filter out singletons!\n")
+  # cat("Start to filter out singletons!\n")
   gene_isoform = cells_isoforms_size_filter(cell_isoform_table = gene_isoform,
                                             ratio = filter_ratio)
   return(as.data.frame(gene_isoform))
