@@ -111,7 +111,7 @@ gene_umi_count <- function(cell_exon,qual,strand,bar = "barcode",
 
     gene_cells_cluster = as.data.frame(do.call(rbind,gene_cells_cluster))
     # return(gene_cells_cluster)
-    cat("Clustering for UMI finished!\n")
+    # cat("Clustering for UMI finished!\n")
     filter_ratio = mean(c(sum(qual[qual$needle < sim_thresh,"count"]),
                           sum(qual[qual$needle < sim_thresh+1,"count"])))/sum(qual$count)
     gene_isoform = isoform_correct_filter(gene_cells_cluster,filter_ratio,strand,
