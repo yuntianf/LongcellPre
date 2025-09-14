@@ -683,7 +683,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
 
   # Isoform imputation
   if(to_isoform){
-    neceParam = list(umi_count = uc,,
+    neceParam = list(umi_count = uc,
                      dir = file.path(work_dir,"out"),
                      gene_bed = gene_bed,gtf = gtf,
                      cores = cores)
