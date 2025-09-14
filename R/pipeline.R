@@ -531,7 +531,7 @@ UMI_count_to_isoform = function(umi_count,dir,
 #'
 #' @description Output the reads after UMI consensus into fastq and map it to the genome.
 #'
-#' @param umi_count The umi count output from umi_count_corres.
+#' @param umi_count The umi count output from umi_count.
 #' @param force_fastq_out flag to force to reoutpupt the consensused fastq
 #' @param force_fastq_out flag to force to remap the consensused fastq
 #' @inheritParams isoformCount2Reads
@@ -602,11 +602,13 @@ UMI_consensus_out = function(umi_count,dir,
 
 #' @title RunLongcellPre
 #'
-#' @description A wrapper function to include the reads_extract_bc and umi_count_corres.
-#' @details A wrapper function to include the reads_extract_bc and umi_count_corres.
+#' @description A wrapper function to include the reads_extract_bc and umi_count_parallel.
+#' @details A wrapper function to include the reads_extract_bc and umi_count_parallel.
 #'
 #' @inheritParams reads_extract_bc
-#' @inheritParams umi_count_corres
+#' @inheritParams umi_count_parallel
+#' @inheritParams UMI_count_to_isoform
+#' @inheritParams UMI_consensus_out
 #' @param force_barcode_match decide whether to redo the barcode match if there already exist the output
 #' @param ... All other tuning parameters
 #'
@@ -676,7 +678,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
                    dir = file.path(work_dir,"out"),
                    gene_bed = gene_bed,
                    cores = cores)
-  Param = paramMerge(umi_count_corres,neceParam,...)
+  Param = paramMerge(umi_count_parallel,neceParam,...)
   uc = do.call(umi_count_parallel,Param)
 
   # Isoform imputation

@@ -19,7 +19,7 @@ UMI_consensus_out(
 )
 }
 \arguments{
-\item{umi_count}{The umi count output from umi_count_corres.}
+\item{umi_count}{The umi count output from umi_count.}
 
 \item{genome_path}{The filename of the reference genome}
 

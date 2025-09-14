@@ -49,8 +49,8 @@ RunLongcellPre(
 \item{force_barcode_match}{decide whether to redo the barcode match if there already exist the output}
 }
 \description{
-A wrapper function to include the reads_extract_bc and umi_count_corres.
+A wrapper function to include the reads_extract_bc and umi_count_parallel.
 }
 \details{
-A wrapper function to include the reads_extract_bc and umi_count_corres.
+A wrapper function to include the reads_extract_bc and umi_count_parallel.
 }
