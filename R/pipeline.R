@@ -372,7 +372,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
 }
 
 
-#' @title umi_count_corres
+#' @title umi_count_parallel
 #'
 #' @description A wrapper function to include all steps in the UMI deduplication.
 #' @details A wrapper function to include all steps in the UMI deduplication, including UMI cluster,
@@ -382,7 +382,6 @@ reads_extract_bc = function(fastq_path,barcode_path,
 #' @param force_UMI_dedup flag to force to redo the UMI deduplication step
 #' @param force_fastq_out flag to force to redo the fastq output step
 #' @inheritParams umi_count
-#' @inheritParams cells_genes_isos_count
 #' @inheritParams genes_distribute
 #' @importFrom dplyr bind_rows
 #' @import Longcellsrc
@@ -391,18 +390,13 @@ reads_extract_bc = function(fastq_path,barcode_path,
 #' @export
 #'
 
-umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
+umi_count_parallel = function(data,qual,dir,gene_bed,
                             # parameter for umi count
                             bar = "barcode",gene = "gene",
                             isoform = "isoform",polyA = "polyA",
                             sim_thresh = NULL, split = "|",sep = ",",
                             splice_site_thresh = 3,verbose = FALSE,
                             bed_gene_col = "gene",bed_strand_col = "strand",
-                            #parameter for mapping to transcript
-                            to_isoform = TRUE,filter_only_intron = TRUE,
-                            mid_offset_thresh = 3,overlap_thresh = 0,
-                            gtf_gene_col = "gene",gtf_start_col = "start",
-                            gtf_end_col = "end",gtf_iso_col = "transname",
                             #parameter for parallel
                             cores = 1,
                             # parameters for cache
@@ -450,45 +444,6 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
     cat(log,"\n")
     print(mem[,2:4])
 
-    if(to_isoform){
-      if(!is.null(gtf)){
-        cat("Start to do isoform alignment:")
-        start_time <- Sys.time()
-        mem = peakRAM::peakRAM({
-          count_mat = future_lapply(count,function(x){
-            if(is.null(x)){
-              return(NULL)
-            }
-            sub_count_mat = cells_genes_isos_count(x,gtf,
-                                                   thresh = mid_offset_thresh,
-                                                   overlap_thresh = overlap_thresh,
-                                                   filter_only_intron = filter_only_intron,
-                                                   gtf_gene_col = gtf_gene_col,
-                                                   gtf_iso_col = gtf_iso_col,
-                                                   gtf_start_col = gtf_start_col,
-                                                   gtf_end_col = gtf_end_col,
-                                                   split = split,sep = sep)
-            if(length(sub_count_mat) == 0 || nrow(sub_count_mat) == 0){
-              return(NULL)
-            }
-            return(sub_count_mat)
-          },future.packages = c("Longcellsrc"),future.seed=TRUE)
-          count_mat = as.data.frame(do.call(dplyr::bind_rows,count_mat))
-          #count_mat[is.na(count_mat)] = 0
-          #saveResult(count_mat,file.path(dir,"iso_count_mat.txt"))
-          saveIsoMat(count_mat,dir)
-        })
-        end_time <- Sys.time()
-        duration = end_time-start_time
-        log = sprintf('Isoform alignment took %.2f %s\n', duration, units(duration))
-        cat(log,"\n")
-        print(mem[,2:4])
-      }
-      else{
-        warning("The gtf annotation is not provided for the isoform imputation, will skip this step!")
-      }
-    }
-
     count = as.data.frame(do.call(rbind,count))
     count = count %>% dplyr::select(cell,gene,isoform,count,polyA)
     saveResult(count,file.path(dir,"iso_count.txt"))
@@ -497,6 +452,80 @@ umi_count_corres = function(data,qual,dir,gene_bed,gtf = NULL,
   return(count)
 }
 
+#' @title UMI_count_to_isoform
+#' @description Impute Isoform-Level Counts from UMI Count Matrix
+#'
+#' @details This function aligns a gene-by-cell UMI count matrix to transcript-level (isoform) annotations,
+#' using gene structure from a GTF file. It splits the data for parallel processing and
+#' aggregates isoform counts per gene per cell.
+#'
+#' @param umi_count A data.frame or data.table containing UMI counts per gene per cell.
+#' @param dir Directory path where output (e.g., isoform count matrix) will be saved.
+#' @param gene_bed A BED-like data.frame containing gene-level metadata (e.g., strand, position).
+#' @param gtf GTF annotation file or parsed object with transcript structures. Required.
+#' @param gene_col Column name in `umi_count` that contains gene IDs. Default is "gene".
+#' @param cores Integer; number of CPU cores to use for parallel processing. Default is 1.
+#' @inheritParams cells_genes_isos_count
+#'
+#' @return Saves the isoform count matrix as a file in `dir`, and returns nothing (invisibly).
+#' If `gtf` is NULL, the function exits early with a warning.
+#'
+#' @import data.table
+#' @import future.apply
+#' @importFrom dplyr bind_rows
+#' @importFrom peakRAM peakRAM
+#' @export
+UMI_count_to_isoform = function(umi_count,dir,
+                                gene_bed,gtf = NULL,gene_col = "gene",
+                                bed_gene_col = "gene",bed_strand_col = "strand",
+                                filter_only_intron = TRUE,
+                                mid_offset_thresh = 3,overlap_thresh = 0,
+                                gtf_gene_col = "gene",gtf_start_col = "start",
+                                gtf_end_col = "end",gtf_iso_col = "transname",
+                                #parameter for parallel
+                                cores = 1){
+  cat("Start to do isoform alignment:")
+
+  if(is.null(gtf)){
+    warning("The gtf annotation is not provided for the isoform imputation, will skip this step!")
+    return(NULL)
+  }
+  cores = coreDetect(cores)
+  data_split = genes_distribute(umi_count,16*cores,gene_col)
+
+  gene_strand = unique(gene_bed[,c(bed_gene_col,bed_strand_col)])
+
+  start_time <- Sys.time()
+  mem = peakRAM::peakRAM({
+    count_mat = future_lapply(data_split,function(x){
+      if(is.null(x)){
+        return(NULL)
+      }
+      sub_count_mat = cells_genes_isos_count(x,gtf,
+                                             thresh = mid_offset_thresh,
+                                             overlap_thresh = overlap_thresh,
+                                             filter_only_intron = filter_only_intron,
+                                             gtf_gene_col = gtf_gene_col,
+                                             gtf_iso_col = gtf_iso_col,
+                                             gtf_start_col = gtf_start_col,
+                                             gtf_end_col = gtf_end_col,
+                                             split = split,sep = sep)
+      if(length(sub_count_mat) == 0 || nrow(sub_count_mat) == 0){
+        return(NULL)
+      }
+      return(sub_count_mat)
+    },future.packages = c("Longcellsrc"),future.seed=TRUE)
+    count_mat = as.data.frame(do.call(dplyr::bind_rows,count_mat))
+    #count_mat[is.na(count_mat)] = 0
+    #saveResult(count_mat,file.path(dir,"iso_count_mat.txt"))
+    saveIsoMat(count_mat,dir)
+  })
+  end_time <- Sys.time()
+  duration = end_time-start_time
+  log = sprintf('Isoform alignment took %.2f %s\n', duration, units(duration))
+  cat(log,"\n")
+  print(mem[,2:4])
+}
 
 #' @title UMI_consensus_out
 #'
@@ -645,11 +674,20 @@ RunLongcellPre = function(fastq_path,barcode_path,
   # UMI deduplication
   neceParam = list(data = bc_out,qual = qual,
                    dir = file.path(work_dir,"out"),
-                   gene_bed = gene_bed,gtf = gtf,
-                   to_isoform = to_isoform,
+                   gene_bed = gene_bed,
                    cores = cores)
   Param = paramMerge(umi_count_corres,neceParam,...)
-  uc = do.call(umi_count_corres,Param)
+  uc = do.call(umi_count_parallel,Param)
+
+  # Isoform imputation
+  if(to_isoform){
+    neceParam = list(umi_count = uc,,
+                     dir = file.path(work_dir,"out"),
+                     gene_bed = gene_bed,gtf = gtf,
+                     cores = cores)
+    Param = paramMerge(UMI_count_to_isoform,neceParam,...)
+    cache = do.call(UMI_count_to_isoform,Param)
+  }
 
 
   # output the UMI denoised fastq and bam
