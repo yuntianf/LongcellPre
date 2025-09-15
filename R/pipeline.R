@@ -482,6 +482,7 @@ UMI_count_to_isoform = function(umi_count,dir,
                                 mid_offset_thresh = 3,overlap_thresh = 0,
                                 gtf_gene_col = "gene",gtf_start_col = "start",
                                 gtf_end_col = "end",gtf_iso_col = "transname",
+                                split = "|",sep = ",",
                                 #parameter for parallel
                                 cores = 1){
   cat("Start to do isoform alignment:")
