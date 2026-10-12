@@ -4,6 +4,12 @@ LongcellPre 1.3.0 contains its native backend in `src/`. Do not add Longcellsrc 
 an installation dependency. Keep the existing public R functions and CLI arguments
 compatible unless a behavior change is intentional and documented in NEWS.md.
 
+For each upgrade, add a dated entry to [NEWS.md](NEWS.md) describing user-visible
+changes, fixes, and any migration steps. Keep changes that are not yet released
+under an `Unreleased` heading; when releasing, use the version from DESCRIPTION
+and the release date, and create a matching Git tag. Update the README's version
+summary and examples when the user workflow changes.
+
 ## Run CI locally
 
 Use Linux or WSL, Python 3, and micromamba. From the repository root:
