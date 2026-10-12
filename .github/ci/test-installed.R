@@ -1,0 +1,18 @@
+args <- commandArgs(trailingOnly = TRUE)
+stopifnot(!length(find.package("Longcellsrc", quiet = TRUE)))
+library(LongcellPre)
+expected_version <- read.dcf(args[2], fields = "Version")[[1]]
+stopifnot(as.character(packageVersion("LongcellPre")) == expected_version)
+stopifnot(all(nzchar(Sys.which(c("minimap2", "samtools", "bedtools", "bash", "python")))))
+result <- testthat::test_package("LongcellPre", reporter = "summary", stop_on_failure = TRUE)
+saveRDS(result, args[1])
+expectations <- unlist(lapply(result, function(x) x$results), recursive = FALSE)
+if (!length(expectations)) stop("No test expectations ran.")
+if (any(vapply(expectations, inherits, logical(1), "expectation_skip")))
+  stop("A CI test was skipped; all integration checks must execute.")
+stopifnot(!"Longcellsrc" %in% loadedNamespaces())
+cat("\n", length(result), " test cases; ", length(expectations), " expectations passed.\n", sep = "")
+cat("Longcellsrc is neither installed nor loaded.\n")
+writeLines(capture.output(sessionInfo()), args[3])
+write.csv(as.data.frame(installed.packages()[, c("Package", "Version"), drop = FALSE]),
+          args[4], row.names = FALSE)

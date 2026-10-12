@@ -1,0 +1,42 @@
+[
+  {
+    "name": "NameNeedle",
+    "version": "1.2.10",
+    "filename": "NameNeedle_1.2.10.tar.gz",
+    "sha256": "ad1af2b89e0056d8ab5bf737fb08c8f8d507a43654a52d4aa8499edf90e3fc61",
+    "urls": [
+      "https://cran.r-project.org/src/contrib/NameNeedle_1.2.10.tar.gz",
+      "https://cran.r-project.org/src/contrib/Archive/NameNeedle/NameNeedle_1.2.10.tar.gz"
+    ]
+  },
+  {
+    "name": "spgs",
+    "version": "1.0-4",
+    "filename": "spgs_1.0-4.tar.gz",
+    "sha256": "e05c12efe1b55b39b709c80df117b7df3793509953954f71b9fc6f153b74c052",
+    "urls": [
+      "https://cran.r-project.org/src/contrib/spgs_1.0-4.tar.gz",
+      "https://cran.r-project.org/src/contrib/Archive/spgs/spgs_1.0-4.tar.gz"
+    ]
+  },
+  {
+    "name": "peakRAM",
+    "version": "1.0.2",
+    "filename": "peakRAM_1.0.2.tar.gz",
+    "sha256": "7bb3f1d83029ec6bb6620cb5c0868bd5edb7b606758aa77a307eba8925724756",
+    "urls": [
+      "https://cran.r-project.org/src/contrib/peakRAM_1.0.2.tar.gz",
+      "https://cran.r-project.org/src/contrib/Archive/peakRAM/peakRAM_1.0.2.tar.gz"
+    ]
+  },
+  {
+    "name": "GenomeInfoDbData",
+    "version": "1.2.13",
+    "filename": "GenomeInfoDbData_1.2.13.tar.gz",
+    "sha256": "51a33c432e65261ef81a7c2039b17cbdf7a0b417376fdb7ada4d618566f7074e",
+    "urls": [
+      "https://bioconductor.posit.co/packages/3.20/data/annotation/src/contrib/GenomeInfoDbData_1.2.13.tar.gz",
+      "https://bioconductor.org/packages/3.20/data/annotation/src/contrib/GenomeInfoDbData_1.2.13.tar.gz"
+    ]
+  }
+]

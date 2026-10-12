@@ -21,7 +21,9 @@ umi_count_parallel(
   bed_gene_col = "gene",
   bed_strand_col = "strand",
   cores = 1,
-  force_UMI_dedup = FALSE
+  force_UMI_dedup = FALSE,
+  max_graph_edges = 5e+06,
+  error_policy = c("stop", "continue")
 )
 }
 \arguments{
@@ -50,6 +52,10 @@ umi_count_parallel(
 \item{cores}{The number of cores required for parallel}
 
 \item{force_UMI_dedup}{flag to force to redo the UMI deduplication step}
+
+\item{max_graph_edges}{Maximum native UMI graph edges per cell/gene. Exceeding this limit is an error, not a silent filter.}
+
+\item{error_policy}{Stop on failed genes, or explicitly continue with partial counts and the umi_qc attribute.}
 
 \item{force_fastq_out}{flag to force to redo the fastq output step}
 }

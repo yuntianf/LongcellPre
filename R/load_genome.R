@@ -1,57 +1,44 @@
-#' @title load_genome
-#' @description Load the genome from BSgenome given the genome name
-#' @param genome_name The name of the genome, can be abbreviations for some commonly used genomes like "hg38"
-#' @importFrom BSgenome available.genomes
-#' @importFrom BSgenome getBSgenome
-#' @importFrom BiocManager install
-#' @return A BSgenome object
-load_genome <- function(genome_name) {
-  genome_list = BSgenome::available.genomes()
-
-  if(genome_name %in% genome_list){
-    genome_package = genome_name
+#' Load an installed BSgenome or the same indexed FASTA used for mapping
+#' @param genome_name Assembly abbreviation or full BSgenome package name.
+#' @param genome_path Optional FASTA; preferred by the pipeline to avoid using
+#' a different assembly for mapping and sequence reconstruction.
+#' @return A reference object used by sequence extraction.
+load_genome <- function(genome_name, genome_path=NULL) {
+  if(!is.null(genome_path)) {
+    path <- normalizePath(genome_path,mustWork=TRUE)
+    if(!file.exists(paste0(path,".fai"))) Rsamtools::indexFa(path)
+    index <- Rsamtools::scanFaIndex(path)
+    return(structure(list(path=path,seqnames=as.character(GenomicRanges::seqnames(index)),
+                          lengths=as.numeric(Biostrings::width(index))),class="longcell_fasta"))
   }
-  # Handle prefix dynamically based on the genome_name and organism
-  else {
-    # Infer organism prefix from genome_name (a simplified heuristic)
-    if (startsWith(genome_name, "hg")) {
-      organism_prefix <- "BSgenome.Hsapiens.UCSC."
-    } else if (startsWith(genome_name, "mm")) {
-      organism_prefix <- "BSgenome.Mmusculus.UCSC."
-    } else if (startsWith(genome_name, "rn")) {
-      organism_prefix <- "BSgenome.Rnorvegicus.UCSC."
-    } else if (startsWith(genome_name, "dm")) {
-      organism_prefix <- "BSgenome.Dmelanogaster.UCSC."
-    } else if (startsWith(genome_name, "ce")) {
-      organism_prefix <- "BSgenome.Celegans.UCSC."
-    } else if (startsWith(genome_name, "dr")) {
-      organism_prefix <- "BSgenome.Drerio.UCSC."
-    } else {
-      stop("Unknown genome name or unsupported organism. Please use the full name for the genome_name or check if the genome exists in BSgenome::available.genomes()")
-    }
-
-    # Construct the full package name
-    genome_package <- paste0(organism_prefix, genome_name)
+  if(length(genome_name) != 1L || is.na(genome_name) || !nzchar(genome_name))
+    stop("Provide genome_path or an installed BSgenome name.")
+  package <- genome_name
+  if(!startsWith(package,"BSgenome.")) {
+    prefixes <- c(hg="Hsapiens",mm="Mmusculus",rn="Rnorvegicus",dm="Dmelanogaster",ce="Celegans",dr="Drerio")
+    organism <- prefixes[substr(genome_name,1,2)]
+    if(is.na(organism)) stop("Unknown assembly abbreviation; supply the full BSgenome package name or genome_path.")
+    package <- paste0("BSgenome.",organism,".UCSC.",genome_name)
   }
+  if(!requireNamespace(package,quietly=TRUE))
+    stop("Reference package '",package,"' is not installed. Install it with BiocManager::install('",
+         package,"'), or use the mapping FASTA via genome_path. Analysis does not install packages automatically.")
+  BSgenome::getBSgenome(package)
+}
 
-  # Check if the package is installed
-  if (!requireNamespace(genome_package, quietly = TRUE)) {
-    message(paste0("The genome package '", genome_package, "' is not installed. Installing now..."))
+reference_names <- function(genome) {
+  if(inherits(genome,"longcell_fasta")) genome$seqnames else names(genome)
+}
 
-    # Install the package
-    tryCatch({
-      BiocManager::install(genome_package)
-    }, error = function(e) {
-      stop(paste("Failed to install genome package:", genome_package, "\nError:", e$message))
-    })
-  }
-
-  # Load the genome using getBSgenome()
-  genome <- tryCatch({
-    BSgenome::getBSgenome(genome_package)
-  }, error = function(e) {
-    stop(paste("Failed to load genome package:", genome_package, "\nError:", e$message))
-  })
-
-  return(genome)
+reference_seq <- function(genome,chr,start,end,strand="+") {
+  if(!inherits(genome,"longcell_fasta"))
+    return(BSgenome::getSeq(genome,chr,start=start,end=end,strand=strand))
+  id <- match(chr,genome$seqnames)
+  if(length(id) != 1L || is.na(id) || !is.finite(start) || !is.finite(end) ||
+     start < 1 || end < start || end > genome$lengths[id])
+    stop("Reference interval outside the mapping FASTA: ",chr,":",start,"-",end)
+  ranges <- GenomicRanges::GRanges(chr,IRanges::IRanges(start,end))
+  seq <- Rsamtools::scanFa(genome$path,param=ranges)[[1]]
+  if(strand == "-") seq <- Biostrings::reverseComplement(seq)
+  seq
 }

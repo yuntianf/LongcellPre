@@ -19,6 +19,8 @@ UMI_count_to_isoform(
   gtf_start_col = "start",
   gtf_end_col = "end",
   gtf_iso_col = "transname",
+  split = "|",
+  sep = ",",
   cores = 1
 )
 }
@@ -44,6 +46,10 @@ UMI_count_to_isoform(
 \item{gtf_end_col}{the name of the column which stores the end position of exon in the gtf.}
 
 \item{gtf_iso_col}{the name of the column which stores isoform name in the gtf.}
+
+\item{split}{The character to split the exons in the isoform}
+
+\item{sep}{The character to split the start and end position for each exon in the isoform.}
 
 \item{cores}{Integer; number of CPU cores to use for parallel processing. Default is 1.}
 }

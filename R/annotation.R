@@ -6,7 +6,8 @@
 #' @param gtf_path The path of input gtf files
 #' @param out_path The path to store the output
 #' @param if_store_binary Whether to save the rds format of gene bed
-#' @importFrom GenomicFeatures makeTxDbFromGFF exonsBy exonicParts exons
+#' @importFrom GenomicFeatures exonsBy exonicParts exons
+#' @importFrom txdbmaker makeTxDbFromGFF
 #' @importFrom tidyr unnest
 #' @importFrom dplyr mutate
 #' @importFrom dplyr n
@@ -15,7 +16,7 @@
 #'
 
 gtf2bed = function(gtf_path,out_path,if_store_binary = TRUE){
-  txdb <- makeTxDbFromGFF(gtf_path,format="gtf")
+  txdb <- txdbmaker::makeTxDbFromGFF(gtf_path,format="gtf")
   exons_temp = exonicParts(txdb)
 
   ### build bed file annotation for each gene ###

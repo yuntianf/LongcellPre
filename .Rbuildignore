@@ -1,2 +1,10 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^Rprof\.out$
+^vignettes/\.ipynb_checkpoints$
+^src/.*\.(o|so|dll)$
+^\.github$
+^ci-output$
+^CONTRIBUTING\.md$
+^exec/__pycache__$
+^LongcellPre_.*\.tar\.gz$

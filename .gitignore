@@ -1,1 +1,14 @@
 R/deprecated.Rin
+src/*.o
+src/*.so
+src/*.dll
+.Rproj.user/
+.Rhistory
+.RData
+Rprof.out
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+ci-output/
+*.Rcheck/
+LongcellPre_*.tar.gz

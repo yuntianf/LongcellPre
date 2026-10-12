@@ -206,12 +206,11 @@ isos_len = function(isos,...){
 #' @param read A string to represent the isoform of a read
 #' @param sep The character to split the start and end position for each exon in the isoform.
 #' @param split The character to split the exons in the isoform
-#' @importFrom Longcellsrc isoform2sites
 #' @return A dataframe with two columns, the first column records the start of each exon, the second records
 #' the end position.
 read2bins = function(read,sep = ",",split = "|"){
   if(class(read) == "character"){
-    sites = Longcellsrc::isoform2sites(read,split = split,sep = sep)
+    sites = isoform2sites(read,split = split,sep = sep)
     len = length(sites)
     bins = as.data.frame(cbind(sites[seq(1,len,2)],sites[seq(2,len,2)]))
   }

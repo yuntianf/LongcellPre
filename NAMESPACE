@@ -18,91 +18,106 @@ export(reads_extract_bc)
 export(reads_extraction)
 export(umi_count)
 export(umi_count_parallel)
-import(Longcellsrc)
 import(data.table)
 import(future.apply)
-importFrom(BSgenome,available.genomes)
-importFrom(BSgenome,getBSgenome)
 importFrom(BSgenome,getSeq)
-importFrom(BiocManager,install)
-importFrom(Biostrings,BStringSet)
-importFrom(Biostrings,DNAStringSet)
+importFrom(Biostrings,
+  BStringSet,
+  DNAStringSet
+)
 importFrom(GenomeInfoDb,seqlevels)
-importFrom(GenomicFeatures,exonicParts)
-importFrom(GenomicFeatures,exons)
-importFrom(GenomicFeatures,exonsBy)
-importFrom(GenomicFeatures,makeTxDbFromGFF)
-importFrom(GenomicRanges,GRanges)
-importFrom(GenomicRanges,findOverlaps)
-importFrom(GenomicRanges,pintersect)
-importFrom(GenomicRanges,width)
-importFrom(IRanges,IRanges)
-importFrom(IRanges,intersect)
-importFrom(IRanges,width)
-importFrom(Longcellsrc,isoform2sites)
-importFrom(Longcellsrc,isos_len_cpp)
-importFrom(Longcellsrc,matrix_xor)
-importFrom(Longcellsrc,size_filter_cpp)
-importFrom(Longcellsrc,splice_site_table_cpp)
-importFrom(Matrix,Matrix)
-importFrom(Matrix,summary)
-importFrom(Matrix,writeMM)
+importFrom(GenomicFeatures,
+  exonicParts,
+  exons,
+  exonsBy
+)
+importFrom(GenomicRanges,
+  GRanges,
+  findOverlaps,
+  pintersect,
+  width
+)
+importFrom(IRanges,
+  IRanges,
+  intersect,
+  width
+)
+importFrom(Matrix,
+  Matrix,
+  summary,
+  writeMM
+)
 importFrom(NameNeedle,needleScores)
 importFrom(R.utils,gzip)
-importFrom(Rsamtools,BamFile)
-importFrom(Rsamtools,ScanBamParam)
-importFrom(Rsamtools,scanBam)
-importFrom(Rsamtools,scanBamFlag)
-importFrom(S4Vectors,queryHits)
-importFrom(S4Vectors,subjectHits)
-importFrom(ShortRead,ShortReadQ)
-importFrom(ShortRead,append)
-importFrom(ShortRead,writeFastq)
+importFrom(Rcpp,evalCpp)
+importFrom(Rsamtools,
+  BamFile,
+  ScanBamParam,
+  scanBam,
+  scanBamFlag
+)
+importFrom(S4Vectors,
+  queryHits,
+  subjectHits
+)
+importFrom(ShortRead,
+  ShortReadQ,
+  append,
+  writeFastq
+)
 importFrom(data.table,as.data.table)
-importFrom(dbscan,dbscan)
-importFrom(dbscan,frNN)
-importFrom(dplyr,across)
-importFrom(dplyr,all_of)
-importFrom(dplyr,arrange)
-importFrom(dplyr,arrange_at)
-importFrom(dplyr,bind_rows)
-importFrom(dplyr,cur_column)
-importFrom(dplyr,desc)
-importFrom(dplyr,everything)
-importFrom(dplyr,filter)
-importFrom(dplyr,filter_at)
-importFrom(dplyr,group_by)
-importFrom(dplyr,group_by_at)
-importFrom(dplyr,inner_join)
-importFrom(dplyr,left_join)
-importFrom(dplyr,mutate)
-importFrom(dplyr,mutate_at)
-importFrom(dplyr,n)
-importFrom(dplyr,reframe)
-importFrom(dplyr,row_number)
-importFrom(dplyr,select)
-importFrom(dplyr,summarise)
-importFrom(dplyr,summarise_all)
-importFrom(dplyr,summarise_at)
-importFrom(dplyr,ungroup)
-importFrom(future,multicore)
-importFrom(future,multisession)
-importFrom(future,plan)
-importFrom(future,sequential)
+importFrom(dbscan,
+  dbscan,
+  frNN
+)
+importFrom(dplyr,
+  across,
+  all_of,
+  arrange,
+  arrange_at,
+  bind_rows,
+  cur_column,
+  desc,
+  everything,
+  filter,
+  filter_at,
+  group_by,
+  group_by_at,
+  inner_join,
+  left_join,
+  mutate,
+  mutate_at,
+  n,
+  reframe,
+  row_number,
+  select,
+  summarise,
+  summarise_all,
+  summarise_at,
+  ungroup
+)
+importFrom(future,
+  multicore,
+  multisession,
+  plan,
+  sequential
+)
 importFrom(future.apply,future_lapply)
-importFrom(igraph,E)
-importFrom(igraph,V)
-importFrom(igraph,as_long_data_frame)
-importFrom(igraph,cluster_leiden)
-importFrom(igraph,crossing)
-importFrom(igraph,decompose)
-importFrom(igraph,delete_edges)
-importFrom(igraph,edge_attr)
-importFrom(igraph,graph.mincut)
-importFrom(igraph,graph_from_data_frame)
-importFrom(igraph,set_vertex_attr)
-importFrom(igraph,simplify)
-importFrom(igraph,vertex_attr)
+importFrom(igraph,
+  E,
+  V,
+  as_long_data_frame,
+  cluster_leiden,
+  crossing,
+  decompose,
+  delete_edges,
+  edge_attr,
+  graph.mincut,
+  graph_from_data_frame,
+  set_vertex_attr,
+  simplify,
+  vertex_attr
+)
 importFrom(magrittr,"%>%")
 importFrom(parallel,detectCores)
 importFrom(peakRAM,peakRAM)
@@ -110,9 +125,15 @@ importFrom(rlang,sym)
 importFrom(spgs,reverseComplement)
 importFrom(stringi,stri_reverse)
 importFrom(stringr,str_extract)
-importFrom(tidyr,pivot_longer)
-importFrom(tidyr,pivot_wider)
-importFrom(tidyr,replace_na)
-importFrom(tidyr,unnest)
-importFrom(valr,bed_merge)
-importFrom(valr,bed_subtract)
+importFrom(tidyr,
+  pivot_longer,
+  pivot_wider,
+  replace_na,
+  unnest
+)
+importFrom(txdbmaker,makeTxDbFromGFF)
+importFrom(valr,
+  bed_merge,
+  bed_subtract
+)
+useDynLib(LongcellPre, .registration = TRUE)

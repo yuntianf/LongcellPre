@@ -94,14 +94,11 @@ gene_umi_count <- function(cell_exon,qual,strand,bar = "barcode",
 
         cell_i$cluster = 0
 
-        # temporarily filter out large cells, will optimize later
-        if(nrow(cell_i) > 400000 || length(unique(cell_i$umi)) > 20000){
-          warning("Too many reads in cell ", i, "which exceeds the max limit of memory")
-          return(NULL)
-        }
         if(nrow(cell_i) != 1){
-          cell_i$cluster = umi_cluster(cell_i$umi,
-                           iso = cell_i$isoform,thresh = sim_thresh)
+          cell_i$cluster = tryCatch(umi_cluster(cell_i$umi,
+                           iso = cell_i$isoform,thresh = sim_thresh),
+            error=function(e) stop("Cell ",i," (",nrow(cell_i)," reads, ",
+                                    length(unique(cell_i$umi))," unique UMIs): ",conditionMessage(e),call.=FALSE))
         }
         else{
           cell_i$cluster = 1
@@ -129,13 +126,24 @@ gene_umi_count <- function(cell_exon,qual,strand,bar = "barcode",
 #' @inheritParams gene_umi_count
 #' @param qual The adapter distance from barcode matching to represent the data quality
 #' @param gene The name of column which stores the gene names
+#' @param error_policy Stop on failed genes, or explicitly continue with partial counts and the umi_qc attribute.
 #' @export
 umi_count <- function(cell_exon,qual, gene_strand,
                       bar = "barcode",gene = "gene",
                       isoform = "isoform",polyA = "polyA",
                       sim_thresh = NULL, split = "|",sep = ",",
-                      splice_site_thresh = 3,verbose = FALSE){
+                      splice_site_thresh = 3,verbose = FALSE,
+                      error_policy = c("stop", "continue")){
+    error_policy = match.arg(error_policy)
+    if(!all(c("needle","count") %in% names(qual)) || !is.numeric(qual$count) ||
+       anyNA(qual$count) || any(qual$count < 0) || sum(qual$count) <= 0)
+      stop("UMI counting requires a non-empty numeric adapter-quality distribution.")
     genes <- unique(as.character(cell_exon[[gene]]))
+    qc <- list()
+    record <- function(id,status,rows,count=0,message="") {
+      qc[[id]] <<- data.frame(gene=id,status=status,input_reads=rows,output_count=count,
+                              message=gsub("[\t\r\n]"," ",message))
+    }
     genes_umi_count <- lapply(genes,function(i){
       if(verbose){
         cat(i,"\n")
@@ -143,6 +151,7 @@ umi_count <- function(cell_exon,qual, gene_strand,
         sub_cell_exon = cell_exon[cell_exon[,gene] == i,]
         strand = unique(gene_strand[gene_strand$gene == i,"strand"])
         if(nrow(sub_cell_exon) < splice_site_thresh){
+          record(i,"filtered",nrow(sub_cell_exon),message="Below splice_site_thresh")
           if(verbose){
             cat("too few reads, will be filtered out\n")
           }
@@ -156,17 +165,24 @@ umi_count <- function(cell_exon,qual, gene_strand,
                                        splice_site_thresh = splice_site_thresh,
                                        verbose = verbose)
         if(is.null(sub_umi_count) || nrow(sub_umi_count) == 0){
+            record(i,"filtered",nrow(sub_cell_exon),message="No supported isoforms or UMIs remain")
             return(NULL)
         }
         sub_umi_count$gene = i
+        record(i,"ok",nrow(sub_cell_exon),sum(sub_umi_count$count))
         return(sub_umi_count)
         }, error = function(e) {
           # Catch and report the error
-          message("Error processing gene ", i, ": ", conditionMessage(e))
-          return(NULL)  # skip this gene
+          record(i,"failed",nrow(sub_cell_exon),message=conditionMessage(e))
+          return(NULL)
         })
     })
 
-    genes_umi_count <- do.call(rbind,genes_umi_count)
+    genes_umi_count <- as.data.frame(dplyr::bind_rows(genes_umi_count))
+    qc <- as.data.frame(dplyr::bind_rows(qc))
+    attr(genes_umi_count,"umi_qc") <- qc
+    if(nrow(qc) && any(qc$status == "failed") && error_policy == "stop")
+      stop("UMI counting failed for gene(s): ",paste(qc$gene[qc$status == "failed"],collapse=", "),
+           ". ",paste(qc$message[qc$status == "failed"],collapse="; "),call.=FALSE)
     return(genes_umi_count)
 }

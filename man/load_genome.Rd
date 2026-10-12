@@ -2,16 +2,19 @@
 % Please edit documentation in R/load_genome.R
 \name{load_genome}
 \alias{load_genome}
-\title{load_genome}
+\title{Load an installed BSgenome or the same indexed FASTA used for mapping}
 \usage{
-load_genome(genome_name)
+load_genome(genome_name, genome_path = NULL)
 }
 \arguments{
-\item{genome_name}{The name of the genome, can be abbreviations for some commonly used genomes like "hg38"}
+\item{genome_name}{Assembly abbreviation or full BSgenome package name.}
+
+\item{genome_path}{Optional FASTA; preferred by the pipeline to avoid using
+a different assembly for mapping and sequence reconstruction.}
 }
 \value{
-A BSgenome object
+A reference object used by sequence extraction.
 }
 \description{
-Load the genome from BSgenome given the genome name
+Load an installed BSgenome or the same indexed FASTA used for mapping
 }

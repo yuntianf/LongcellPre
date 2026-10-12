@@ -22,6 +22,8 @@ RunLongcellPre(
   minimap2 = "minimap2",
   samtools = "samtools",
   bedtools = "bedtools",
+  keep_intermediates = FALSE,
+  force_rerun = FALSE,
   ...
 )
 }
@@ -43,6 +45,10 @@ RunLongcellPre(
 \item{minimap2}{The path of the minimap2}
 
 \item{samtools}{The path of the samtools}
+
+\item{keep_intermediates}{Retain barcode and coverage intermediates after a successful run.}
+
+\item{force_rerun}{Recompute all stages, including annotation, when reusing an output directory.}
 
 \item{...}{All other tuning parameters}
 

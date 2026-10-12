@@ -1,16 +1,17 @@
 Package: LongcellPre
 Type: Package
 Title: Generate single cell isoform expression matrix from fastq
-Version: 1.2.0
+Version: 1.3.0
 Author: Yuntian Fu
 Maintainer: Yuntian Fu <yuntianfu0@gmail.com>
 Description: Generate single cell isoform expression matrix from bam alignment.
-License: MIT
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 biocViews: BSgenome, GenomicFeatures, IRanges, Rsamtools, GenomicRanges, txdbmaker, Biostrings,ShortRead
-Imports: Matrix, NameNeedle, dbscan, dplyr, future, future.apply, igraph, parallel, peakRAM, spgs, stringi, stringr, tidyr, Rcpp, valr, argparse, BSgenome, GenomicFeatures, IRanges, Rsamtools, GenomicRanges, txdbmaker, BiocManager, Biostrings, ShortRead,R.utils, data.table
-LinkingTo: Rcpp, RcppEigen
-Suggests: BSgenome.Mmusculus.UCSC.mm39, BSgenome.Hsapiens.UCSC.hg38
-RoxygenNote: 7.2.1
-Additional_repositories: https://bioconductor.org/packages/3.20/bioc/
+Imports: Matrix, NameNeedle, dbscan, dplyr, future, future.apply, igraph, parallel, peakRAM, spgs, stringi, stringr, tidyr, Rcpp, valr, argparse, BSgenome, GenomicFeatures, IRanges, Rsamtools, GenomicRanges, txdbmaker, BiocManager, Biostrings, ShortRead, R.utils, data.table, magrittr, GenomeInfoDb, S4Vectors, rlang
+Suggests: BSgenome.Mmusculus.UCSC.mm39, BSgenome.Hsapiens.UCSC.hg38, testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0
+LinkingTo: Rcpp
+SystemRequirements: C++17, zlib

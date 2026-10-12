@@ -1,0 +1,47 @@
+args <- commandArgs(trailingOnly=TRUE)
+mode <- "updated"
+root <- normalizePath(args[2])
+stopifnot(!length(find.package("Longcellsrc", quiet=TRUE)))
+library(LongcellPre)
+RNGkind("Mersenne-Twister", "Inversion", "Rejection")
+set.seed(7301)
+dna <- function(n, width) replicate(n, paste(sample(c('A','C','G','T'), width, TRUE), collapse=''))
+graph <- function(umi, iso, count, sim_thresh=7, iso_thresh=80)
+  LongcellPre:::umi_graph_table(umi,iso,count,sim_thresh,iso_thresh,'|',',')
+barcode_match <- function(tags, whitelist, threshold=0.25)
+  LongcellPre:::barcodeMatch(tags,whitelist,20,10,10,6,100,5,threshold,0.05,3,10,1)
+graphs <- list()
+for (i in seq_len(35)) {
+  n <- sample(5:70, 1)
+  pool <- dna(ceiling(n/2), 12)
+  umi <- sample(pool, n, TRUE)
+  iso <- sample(c('100,150', '100,140|200,230', '110,160', '300,400'), n, TRUE)
+  graphs[[i]] <- lapply(graph(umi, iso, sample(1:12,n,TRUE),
+                                                    sim_thresh=sample(3:11,1), iso_thresh=30), as.numeric)
+}
+barcodes <- unique(dna(1500,16))
+tags <- paste0(dna(300,14), sample(barcodes,300,TRUE), dna(300,18))
+tags[seq(1,300,3)] <- sub('A','C',tags[seq(1,300,3)])
+barcode <- lapply(c(0, 0.25, 0.75), function(threshold)
+  barcode_match(tags,barcodes,threshold))
+out <- list(graphs=graphs, barcode=barcode)
+  old <- readRDS(file.path(root,'native-baseline.rds'))
+  stopifnot(identical(old,out))
+  # New error/overflow/boundary behavior has independent expected results.
+  stopifnot(length(graph(character(),character(),integer())) == 0)
+  variable <- do.call(rbind,graph(c('AAAA','AAA'),rep('100,200',2),c(1L,1L),sim_thresh=0))
+  stopifnot(all(variable[variable[,1] != variable[,2],3] == 2))
+  weight <- graph('AAAAAAAAAAAA','100,200',100000L)[[1]][4]
+  stopifnot(weight == 100000 * 99999 / 2)
+  one <- barcode_match(paste0('TTTTTTTTTTTT',barcodes[1],'AAAAAAAAAAAAAA'),barcodes[1])
+  stopifnot(is.data.frame(one))
+  annotation <- cbind(c(100,200),c(150,300))
+  warning_messages <- character()
+  boundary <- withCallingHandlers(LongcellPre:::extractReads(strrep('A',100),'80M10N20M',120,
+                                                           annotation,'+',5,200,15),
+    warning=function(w) { warning_messages <<- c(warning_messages,conditionMessage(w)); invokeRestart('muffleWarning') })
+  stopifnot(!length(warning_messages), identical(boundary$isoform,'120,199|200,229'))
+  options(longcell.max_graph_edges=2)
+  limited <- tryCatch(graph(rep('AAAAAAAAAAAA',3),rep('100,200',3),rep(1L,3)),error=identity)
+  stopifnot(inherits(limited,'error'),grepl('max_graph_edges',conditionMessage(limited)))
+  cat('PASS: 35 exact UMI graph comparisons; three barcode settings with 300 tags/1,500 barcodes; overflow, empty, single-barcode, bounds and graph-budget checks.\n')

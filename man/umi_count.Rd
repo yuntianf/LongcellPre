@@ -16,7 +16,8 @@ umi_count(
   split = "|",
   sep = ",",
   splice_site_thresh = 3,
-  verbose = FALSE
+  verbose = FALSE,
+  error_policy = c("stop", "continue")
 )
 }
 \arguments{
@@ -41,6 +42,8 @@ umi_count(
 \item{splice_site_thresh}{The minimum threshold of occurance  for an splice site to be preserved}
 
 \item{verbose}{if print information during UMI clustering for each cell.}
+
+\item{error_policy}{Stop on failed genes, or explicitly continue with partial counts and the umi_qc attribute.}
 }
 \description{
 get the umi count for each cell for each gene.

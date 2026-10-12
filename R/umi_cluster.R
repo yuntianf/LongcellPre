@@ -20,6 +20,7 @@
 #'
 umi_sim_graph <- function(umi,iso = NULL,sim_thresh = 7,
                               iso_thresh = 200,split = "|",sep = ","){
+  if(!length(umi)) return(list(igraph::make_empty_graph(), data.frame(id=integer(),pair_id=integer())))
   if(is.null(iso)){
     iso = rep("N",length(umi))
   }
@@ -39,8 +40,12 @@ umi_sim_graph <- function(umi,iso = NULL,sim_thresh = 7,
   umi_ns = umi_graph_table(iso_umi_table$umi,iso_umi_table$iso,iso_umi_table$count,
                            sim_thresh,iso_thresh,split,sep);
 
-  umi_ns = as.data.frame(do.call(rbind,umi_ns))
-  colnames(umi_ns) <- c("node1","node2","ns","count")
+  if(length(umi_ns)){
+    umi_ns = as.data.frame(do.call(rbind,umi_ns))
+    colnames(umi_ns) <- c("node1","node2","ns","count")
+  } else {
+    umi_ns = data.frame(node1=integer(),node2=integer(),ns=numeric(),count=numeric())
+  }
 
   umi_ns = umi_ns[umi_ns$ns > 0,]
   umi_ns$node1 = umi_ns$node1+1
@@ -223,8 +228,9 @@ graph_to_cluster <- function(graph_list){
 #' @param sim_thresh the minimum threshold of needleman score to connect to different UMIs.
 #' @importFrom dplyr left_join
 umi_cluster <- function(umi,iso = NULL,thresh = NULL){
+  if(!length(umi)) return(integer())
   if(is.null(thresh)){
-    thresh = round(length(umi)/2+1)
+    thresh = round(nchar(umi[[1]])/2+1)
   }
   graph_corres <- umi_sim_graph(umi,iso = iso,sim_thresh = thresh)
   graph = graph_corres[[1]]

@@ -14,6 +14,8 @@ UMI_consensus_out(
   samtools = "samtools",
   minimap_bed_path = NULL,
   cores = 1,
+  batch_reads = 10000,
+  batch_bases = 1e+07,
   force_fastq_out = FALSE,
   force_map = FALSE
 )
@@ -28,6 +30,8 @@ UMI_consensus_out(
 \item{minimap2}{The path of the minimap2}
 
 \item{samtools}{The path of the samtools}
+
+\item{batch_reads, batch_bases}{Export batch limits. A single longer read may exceed the base limit.}
 
 \item{force_fastq_out}{flag to force to remap the consensused fastq}
 }

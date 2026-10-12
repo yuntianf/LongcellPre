@@ -6,7 +6,7 @@
 #' @param work_dir The specified directory for the output of LongcellPre
 #' @export
 init = function(work_dir){
-  dir.create(work_dir,showWarnings = FALSE)
+  dir.create(work_dir,showWarnings = FALSE,recursive = TRUE)
   dir.create(file.path(work_dir,"annotation"),showWarnings = FALSE)
   dir.create(file.path(work_dir,"BarcodeMatch"),showWarnings = FALSE)
   dir.create(file.path(work_dir,"bam"),showWarnings = FALSE)
@@ -109,19 +109,25 @@ annotation = function(gtf_path = NULL,gene_bed_path = NULL,work_dir = "./",overw
 fastqMap = function(fastq,out_name,genome_path,bed_path = NULL,
                     minimap2 = "minimap2",samtools = "samtools",
                     minimap2_thread = 4,samtools_thread = 4){
-  minimap_command = paste(c(minimap2,"-ax splice -uf --sam-hit-only -t",
-                            minimap2_thread,genome_path,fastq),collapse = " ")
-  if(!is.null(bed_path)){
-    minimap_command = paste(c(minimap_command,"--junc-bed",bed_path),collapse = " ")
-  }
-  samtools_command1 = paste(c(samtools,"view -bS -@", samtools_thread,"-"),collapse = " ")
-  samtools_command2 = paste(c(samtools,"sort - -@", samtools_thread,"-o",out_name,
-                              "&&",samtools,"index",out_name),collapse = " ")
-
-  command = paste(c(minimap_command,samtools_command1,samtools_command2),collapse = " | ")
-  print("The command for mapping is:")
-  print(command)
-  system(command)
+  if(!all(file.exists(c(fastq,genome_path,bed_path)))) stop("Mapping input file does not exist.")
+  if(any(c(minimap2_thread,samtools_thread) < 1) || anyNA(c(minimap2_thread,samtools_thread)))
+    stop("Mapping thread counts must be positive.")
+  minimap2 = tool_path(minimap2)
+  samtools = check_samtools(samtools)
+  dir.create(dirname(out_name),recursive=TRUE,showWarnings=FALSE)
+  staged = tempfile(".longcell-map-",tmpdir=dirname(out_name),fileext=".bam")
+  on.exit(unlink(c(staged,paste0(staged,".bai"))),add=TRUE)
+  log_file = paste0(out_name,".mapping.log")
+  minimap_args = c(minimap2,"-ax","splice","-uf","--sam-hit-only","-t",minimap2_thread)
+  if(!is.null(bed_path)) minimap_args = c(minimap_args,"--junc-bed",bed_path)
+  minimap_args = c(minimap_args,genome_path,fastq)
+  checked_pipeline(list(minimap_args,
+                        c(samtools,"view","-bS","-@",samtools_thread,"-"),
+                        c(samtools,"sort","-@",samtools_thread,"-o",staged,"-")),log_file)
+  checked_command(samtools,c("quickcheck","-v",staged),stderr=paste0(out_name,".validation.log"),label="BAM validation")
+  checked_command(samtools,c("index",staged),stderr=paste0(out_name,".index.log"),label="BAM indexing")
+  if(!valid_bam(staged,samtools)) stop("Mapping did not produce a complete BAM/index pair.")
+  publish_files(c(staged,paste0(staged,".bai")),c(out_name,paste0(out_name,".bai")))
   return(NULL)
 }
 
@@ -136,13 +142,13 @@ fastqMap = function(fastq,out_name,genome_path,bed_path = NULL,
 #' @param bedtools The path for the bedtools.
 #' @return A bed file including all genes without read alignment in the bam file.
 bamGeneCoverage = function(bam,gene_range_bed,outdir,bedtools = "bedtools"){
-  command1 = paste(c(bedtools, "bamtobed -i", bam, "|",
-                     bedtools, "merge -i - > ", file.path(outdir,"cover.bed")),collapse = " ")
-  command2 = paste(c(bedtools, "subtract -a", gene_range_bed, "-b", file.path(outdir,"cover.bed"),
-                     "-A >", file.path(outdir,"noncover.bed")),collapse = " ")
-
-  system(command1)
-  system(command2)
+  bedtools = tool_path(bedtools)
+  cover = file.path(outdir,"cover.bed")
+  log = file.path(outdir,"coverage.log")
+  checked_pipeline(list(c(bedtools,"bamtobed","-i",bam),c(bedtools,"merge","-i","-")),
+                   log,stdout=cover)
+  checked_command(bedtools,c("subtract","-a",gene_range_bed,"-b",cover,"-A"),
+                  stdout=file.path(outdir,"noncover.bed"),stderr=log,label="Gene coverage")
 
   filename = file.path(outdir,"noncover.bed")
   if(file.size(filename) == 0L){
@@ -184,7 +190,6 @@ clean_file = function(dir){
 #' @param force_barcode_match flag to force to redo the barcode match step
 #' @param force_map flag to force to redo the mapping step
 #' @param force_isoform_extract flag to force to redo the isoform extraction step
-#' @import Longcellsrc
 #' @importFrom peakRAM peakRAM
 #' @importFrom magrittr %>%
 #' @importFrom dplyr group_by
@@ -230,16 +235,16 @@ reads_extract_bc = function(fastq_path,barcode_path,
 
   if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt")) &
      file.exists(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))){
-    if(!force_rerun){
+    if(!force_rerun && !force_barcode_match && !force_map && !force_isoform_extract &&
+       valid_bam(file.path(work_dir,"bam/polish.bam"),samtools)){
       warning("The barcode match and isoform extraction result already exist,
               if you want to redo everything please set force_rerun to be TRUE")
       reads_bc = read.table(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt"),header = TRUE,sep = "\t")
       qual = read.table(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"),header = TRUE,sep = "\t")
       return(list(reads_bc,qual))
     }
-    else{
-      unlink(file.path(work_dir,"BarcodeMatch/*"), recursive = TRUE)
-      unlink(file.path(work_dir,"bam/*"), recursive = TRUE)
+    else if(force_rerun){
+      force_barcode_match = force_map = force_isoform_extract = TRUE
     }
   }
   # barcode match
@@ -286,7 +291,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
   # fastq mapping
   cat("Start to map polished fastq to genome:\n")
   do_map_flag = TRUE
-  if(file.exists(file.path(work_dir,"bam/polish.bam"))){
+  if(!do_bc_flag && valid_bam(file.path(work_dir,"bam/polish.bam"),samtools)){
     if(!force_map){
       warning("The mapping result already exists,
               if you want to redo it please set force_map to be TRUE")
@@ -310,7 +315,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
   do_extract_flag = TRUE
   if(file.exists(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt")) &
      file.exists(file.path(work_dir,"BarcodeMatch/adapterNeedle.txt"))){
-    if(!force_isoform_extract){
+    if(!force_isoform_extract && !do_bc_flag && !do_map_flag){
       warning("The barcode match and isoform extraction result already exist,
               if you want to redo it please set force_isoform_extract to be TRUE")
       reads_bc = read.table(file.path(work_dir,"BarcodeMatch/BarcodeMatchIso.txt"),header = TRUE,sep = "\t")
@@ -336,7 +341,7 @@ reads_extract_bc = function(fastq_path,barcode_path,
 
     start_time <- Sys.time()
     mem = peakRAM::peakRAM({
-      suppressWarnings({genome<-load_genome(genome_name)})
+      genome <- load_genome(genome_name,genome_path=genome_path)
       reads = reads_extraction(bam_path = file.path(work_dir,"bam/polish.bam"),
                                gene_bed = gene_bed,genome = genome,
                                toolkit = toolkit,
@@ -380,11 +385,11 @@ reads_extract_bc = function(fastq_path,barcode_path,
 #'
 #' @param data The first output dataframe from reads_extract_bc.
 #' @param force_UMI_dedup flag to force to redo the UMI deduplication step
+#' @param max_graph_edges Maximum native UMI graph edges per cell/gene. Exceeding this limit is an error, not a silent filter.
 #' @param force_fastq_out flag to force to redo the fastq output step
 #' @inheritParams umi_count
 #' @inheritParams genes_distribute
 #' @importFrom dplyr bind_rows
-#' @import Longcellsrc
 #' @importFrom future.apply future_lapply
 #' @importFrom peakRAM peakRAM
 #' @export
@@ -400,7 +405,12 @@ umi_count_parallel = function(data,qual,dir,gene_bed,
                             #parameter for parallel
                             cores = 1,
                             # parameters for cache
-                            force_UMI_dedup = FALSE){
+                            force_UMI_dedup = FALSE,
+                            max_graph_edges = 5000000,
+                            error_policy = c("stop", "continue")){
+  error_policy = match.arg(error_policy)
+  if(length(max_graph_edges) != 1 || !is.finite(max_graph_edges) || max_graph_edges < 1)
+    stop("max_graph_edges must be a positive finite number.")
 
   cat("Start to do UMI deduplication:\n")
 
@@ -419,24 +429,23 @@ umi_count_parallel = function(data,qual,dir,gene_bed,
     data_split = genes_distribute(data,16*cores,gene)
 
     gene_strand = unique(gene_bed[,c(bed_gene_col,bed_strand_col)])
+    colnames(gene_strand) = c("gene","strand")
 
 
     start_time <- Sys.time()
     mem = peakRAM::peakRAM({
       count = future_lapply(data_split,function(x){
+        old_options = options(longcell.max_graph_edges=max_graph_edges)
+        on.exit(options(old_options),add=TRUE)
         sub_count = umi_count(x,qual,gene_strand,
                               bar = bar,gene = gene,
                               isoform = isoform,polyA = polyA,
                               sim_thresh = sim_thresh,
                               split = split,sep = sep,
                               splice_site_thresh = splice_site_thresh,
-                              verbose = verbose)
-
-        if(length(sub_count) == 0 || nrow(sub_count) == 0){
-          return(NULL)
-        }
-        return(sub_count)
-      },future.packages = c("Longcellsrc"),future.seed=TRUE)
+                              verbose = verbose,error_policy = "continue")
+        list(count=sub_count,qc=attr(sub_count,"umi_qc"))
+      },future.packages = c("LongcellPre"),future.seed=TRUE)
     })
     end_time <- Sys.time()
     duration = end_time-start_time
@@ -444,7 +453,16 @@ umi_count_parallel = function(data,qual,dir,gene_bed,
     cat(log,"\n")
     print(mem[,2:4])
 
-    count = as.data.frame(do.call(rbind,count))
+    qc = as.data.frame(dplyr::bind_rows(lapply(count,`[[`,"qc")))
+    saveResult(qc,file.path(dir,"umi_qc.tsv"))
+    if(nrow(qc) && any(qc$status == "failed")){
+      detail = paste0("UMI counting failed for ",sum(qc$status == "failed"),
+                       " gene(s); see ",file.path(dir,"umi_qc.tsv"),". ",
+                       paste(qc$message[qc$status == "failed"],collapse="; "))
+      if(error_policy == "stop") stop(detail,call.=FALSE) else warning(detail,call.=FALSE)
+    }
+    count = as.data.frame(dplyr::bind_rows(lapply(count,`[[`,"count")))
+    if(!nrow(count)) stop("No UMI counts remain; see umi_qc.tsv for filtered or failed genes.")
     count = count %>% dplyr::select(cell,gene,isoform,count,polyA)
     saveResult(count,file.path(dir,"iso_count.txt"))
   }
@@ -515,7 +533,7 @@ UMI_count_to_isoform = function(umi_count,dir,
         return(NULL)
       }
       return(sub_count_mat)
-    },future.packages = c("Longcellsrc"),future.seed=TRUE)
+    },future.packages = c("LongcellPre"),future.seed=TRUE)
     count_mat = as.data.frame(do.call(dplyr::bind_rows,count_mat))
     #count_mat[is.na(count_mat)] = 0
     #saveResult(count_mat,file.path(dir,"iso_count_mat.txt"))
@@ -545,6 +563,7 @@ UMI_consensus_out = function(umi_count,dir,
                              minimap2 = "minimap2",samtools = "samtools",
                              minimap_bed_path = NULL,
                              cores = 1,
+                             batch_reads = 10000,batch_bases = 10000000,
                              force_fastq_out = FALSE,force_map = FALSE){
   ### transform the count to fastq
   cat("Start to output the UMI collapsed fastq:\n")
@@ -562,14 +581,12 @@ UMI_consensus_out = function(umi_count,dir,
   if(do_fq_flag){
     start_time <- Sys.time()
 
-    genome = load_genome(genome_name)
-    reads = isoformCount2Reads(umi_count,genome,gene_bed,file.path(dir,"UMI_collapsed.fq.gz"))
-
-    qname = as.character(reads@id)
-    annot = extractAnnotFromQname(qname,"cell")
-    qname = cbind(qname,annot)
-
-    saveResult(qname,file.path(dir,"reads_annot.csv"),sep = ",")
+    genome = load_genome(genome_name,genome_path=genome_path)
+    isoformCount2Reads(umi_count,genome,gene_bed,file.path(dir,"UMI_collapsed.fq.gz"),
+                      return_reads = FALSE,
+                      batch_reads=batch_reads,batch_bases=batch_bases,
+                      qc_file=file.path(dir,"export_qc.tsv"),
+                      annotation_file = file.path(dir,"reads_annot.csv"))
 
     end_time <- Sys.time()
     duration = end_time-start_time
@@ -578,7 +595,7 @@ UMI_consensus_out = function(umi_count,dir,
 
   cat("Start to map UMI collapsed fastq to genome:\n")
   do_map_flag = TRUE
-  if(file.exists(file.path(dir,"UMI_collapsed.bam"))){
+  if(!do_fq_flag && valid_bam(file.path(dir,"UMI_collapsed.bam"),samtools)){
     if(!force_map){
       warning("The mapping result already exists,
               if you want to redo it please set force_map to be TRUE")
@@ -612,6 +629,8 @@ UMI_consensus_out = function(umi_count,dir,
 #' @inheritParams UMI_consensus_out
 #' @param force_barcode_match decide whether to redo the barcode match if there already exist the output
 #' @param ... All other tuning parameters
+#' @param keep_intermediates Retain barcode and coverage intermediates after a successful run.
+#' @param force_rerun Recompute all stages, including annotation, when reusing an output directory.
 #'
 #' @importFrom future plan
 #' @importFrom future sequential
@@ -633,13 +652,34 @@ RunLongcellPre = function(fastq_path,barcode_path,
                           minimap2 = "minimap2",
                           samtools = "samtools",
                           bedtools = "bedtools",
+                          keep_intermediates = FALSE,
+                          force_rerun = FALSE,
                           ...){
   # initialization
   cache = init(work_dir)
+  incomplete = file.path(work_dir,"run_incomplete")
+  if(file.exists(incomplete) && !force_rerun)
+    stop("The previous run did not finish. Use a new work_dir or force_rerun=TRUE to avoid mixing incomplete outputs.")
+  extra = list(...)
+  if(force_rerun) {
+    extra[c("overwrite","force_barcode_match","force_map","force_isoform_extract",
+            "force_UMI_dedup","force_fastq_out")] = TRUE
+  }
+  if(any(unlist(extra[c("force_barcode_match","force_map","force_isoform_extract")]),na.rm=TRUE))
+    extra[c("force_UMI_dedup","force_fastq_out")] = TRUE
+  if(isTRUE(extra$force_UMI_dedup)) extra$force_fastq_out = TRUE
+  settings = list(toolkit=toolkit,protocol=protocol,adapter=adapter,to_isoform=to_isoform,
+                  options=extra[!grepl("^force_|^overwrite$",names(extra))],
+                  LongcellPre=as.character(utils::packageVersion("LongcellPre")),
+                  native_backend="bundled")
+  check_run_manifest(work_dir,c(fastq_path,barcode_path,genome_path,gtf_path,gene_bed_path,minimap_bed_path),
+                     settings,force_rerun)
+  writeLines(as.character(Sys.time()),incomplete)
+  merge_params = function(func,neceParam) do.call(paramMerge,c(list(func=func,neceParam=neceParam),extra))
 
   # annotation
   neceParam = list(gtf_path = gtf_path,gene_bed_path = gene_bed_path,work_dir = work_dir)
-  Param = paramMerge(func = annotation,neceParam = neceParam,...)
+  Param = merge_params(annotation,neceParam)
   cache = do.call(annotation,Param)
   gene_bed = cache[[1]]
   gtf = cache[[2]]
@@ -669,7 +709,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
                    work_dir = work_dir,
                    minimap2 = minimap2,samtools = samtools,bedtools = bedtools,
                    cores = cores)
-  Param = paramMerge(reads_extract_bc,neceParam,...)
+  Param = merge_params(reads_extract_bc,neceParam)
   bc = do.call(reads_extract_bc,Param)
   bc_out = bc[[1]]
   qual = bc[[2]]
@@ -679,7 +719,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
                    dir = file.path(work_dir,"out"),
                    gene_bed = gene_bed,
                    cores = cores)
-  Param = paramMerge(umi_count_parallel,neceParam,...)
+  Param = merge_params(umi_count_parallel,neceParam)
   uc = do.call(umi_count_parallel,Param)
 
   # Isoform imputation
@@ -688,7 +728,7 @@ RunLongcellPre = function(fastq_path,barcode_path,
                      dir = file.path(work_dir,"out"),
                      gene_bed = gene_bed,gtf = gtf,
                      cores = cores)
-    Param = paramMerge(UMI_count_to_isoform,neceParam,...)
+    Param = merge_params(UMI_count_to_isoform,neceParam)
     cache = do.call(UMI_count_to_isoform,Param)
   }
 
@@ -701,13 +741,12 @@ RunLongcellPre = function(fastq_path,barcode_path,
                    minimap2 = minimap2,samtools = samtools,
                    minimap_bed_path = minimap_bed_path,
                    cores = cores)
-  Param = paramMerge(UMI_consensus_out,neceParam,...)
+  Param = merge_params(UMI_consensus_out,neceParam)
   uc = do.call(UMI_consensus_out,Param)
 
   # clean cache files
-  cache = clean_file(work_dir)
+  if(!keep_intermediates) cache = clean_file(work_dir)
+  unlink(incomplete)
 
   print("LongcellPre pipeline finished!")
 }
-
-

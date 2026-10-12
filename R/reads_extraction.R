@@ -27,7 +27,7 @@ readBam = function(bamFile,chr,start,end, strand, map_qual = 30){
 
   gr <- GRanges(seqnames = chr,
                 ranges = IRanges(start = start, end = end))
-  seqlevels(gr) <- seqlevels(bamFile)
+  GenomeInfoDb::seqlevels(gr) <- GenomeInfoDb::seqlevels(bamFile)
 
   if(strand == "+"){
     param <- ScanBamParam(mapqFilter = map_qual,flag=scanBamFlag(isUnmappedQuery=FALSE,isMinusStrand = FALSE),
@@ -63,7 +63,7 @@ readBam = function(bamFile,chr,start,end, strand, map_qual = 30){
 #' @return return bool vector to indicate if the polyA sites are real.
 mid_polyA_filter = function(endsites, genome,chr,strand,bin = 20,thresh = 0.4){
   endsites_uniq = unique(endsites)
-  read = tryCatch({as.character(getSeq(genome,chr,start = min(endsites_uniq)-bin,
+  read = tryCatch({as.character(reference_seq(genome,chr,start = min(endsites_uniq)-bin,
                              end = max(endsites_uniq)+bin,strand = strand))},
                   error = function(e) {
                     warning(sprintf("Failed to get sequence for '%s': %s", chr, e$message))
@@ -194,8 +194,10 @@ reads_extraction = function(bam_path,gene_bed,genome,toolkit = 5,
     }
     sub_reads$gene = i
     return(sub_reads)
-  },future.packages = c("Longcellsrc"),future.seed=TRUE)
+  },future.packages = c("LongcellPre"),future.seed=TRUE)
 
-  reads = as.data.frame(do.call(rbind,reads))
+  reads = as.data.frame(dplyr::bind_rows(reads))
+  if(!nrow(reads)) return(data.frame(qname=character(),isoform=character(),isoend=integer(),
+                                     polyA=character(),gene=character()))
   return(reads)
 }

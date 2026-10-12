@@ -119,6 +119,7 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
                         UMI_len = 10, UMI_flank = 1,
                         # parameter for parallel
                         cores = 1){
+  fastq_format(fastq_path)
 
   config = seq_config(protocol,toolkit,
                       adapter,
@@ -126,6 +127,7 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
                       barcode_len,UMI_len)
   barcode_len = config$barcode_len
   UMI_len = config$UMI_len
+  barcode = read_barcodes(barcode_path,barcode_len)
 
   reads = extractTagFastq(fastq_path,out_name,
                           config$adapter,toolkit,window,step,
@@ -133,11 +135,8 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
                           polyA_bin,polyA_base_count,polyA_len)
 
   if(length(reads) == 0 || nrow(reads) == 0){
-    stop("Please check if your adapter sequence is correct!")
+    stop("No usable adapter/tag regions were found. Use untrimmed reads and verify toolkit (3 or 5), protocol and adapter; trimmed-away barcodes cannot be recovered.")
   }
-
-  barcode = read.table(barcode_path)[,1]
-  barcode = substr(barcode,1,barcode_len)
 
   if(toolkit == 5){
     reads$tag = stringi::stri_reverse(reads$tag)
@@ -161,6 +160,7 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
   }
 
   bc = bc %>% filter(nchar(umi) == UMI_len+2*UMI_flank)
+  if(!nrow(bc)) stop("No barcodes with complete UMIs passed filtering. Check whitelist, chemistry and untrimmed input.")
   orig_col = setdiff(colnames(bc),"id")
   bc = cbind(bc,reads[bc$id,c("name","tag","polyA")]) %>% dplyr::select(-id)
 
@@ -188,16 +188,21 @@ extractTagBc = function(fastq_path,barcode_path,out_name,
 #' how many adapters have such an edit distance to the original adapter
 adapter_dis = function(data){
   len = unique(nchar(data$umi))
+  if(length(len) != 1L || !is.finite(len) || len == 0L){
+    stop("Cannot estimate adapter quality: no consistent, non-empty UMIs remain. Check untrimmed input, chemistry, and whitelist.")
+  }
   adapter = data %>%
             filter(edit == 0) %>%
             filter(nchar(adapter) == len)
 
   adapter_count = table(adapter$adapter)
+  if(!length(adapter_count)){
+    stop("Cannot estimate adapter quality: no exact barcode matches with a complete adjacent adapter. Use untrimmed reads and check toolkit/protocol and sample-specific barcodes.")
+  }
   adapter_seq = names(adapter_count)[adapter_count == max(adapter_count)][1]
 
-  adapter_dis = cbind(needleScores(adapter_seq,names(adapter_count)),adapter_count)
-  adapter_dis = as.data.frame(adapter_dis)
-  colnames(adapter_dis) = c("needle","count")
+  adapter_dis = data.frame(needle = as.numeric(unlist(needleScores(adapter_seq,names(adapter_count)))),
+                           count = as.numeric(adapter_count))
   adapter_dis = adapter_dis %>% group_by(needle) %>% summarise(count = sum(count))
 
   return(adapter_dis)

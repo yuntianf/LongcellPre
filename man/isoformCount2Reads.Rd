@@ -16,6 +16,11 @@ isoformCount2Reads(
   count_col = "count",
   name_col = c("cell", "gene", "polyA"),
   quality = "~",
+  return_reads = TRUE,
+  annotation_file = NULL,
+  batch_reads = 10000,
+  batch_bases = 1e+07,
+  qc_file = NULL,
   ...
 )
 }
@@ -39,9 +44,20 @@ in the read name.}
 \item{name_col}{The name of the columns which record the meta information of each read. The information from those columns would be saved in the read name.}
 
 \item{quality}{Currently the quality for the UMI-collapsed reads are all set to the highest as '~'.}
+
+\item{return_reads}{Return all reads in memory for compatibility. Set FALSE to
+write one gene at a time without retaining the full FASTQ in memory.}
+
+\item{annotation_file}{Optional CSV path for read-name and cell annotations,
+written alongside each gene's reads.}
+
+\item{batch_reads, batch_bases}{Export batch limits. A single longer read may exceed the base limit.}
+
+\item{qc_file}{Optional TSV reporting exported reads, bases and reference N bases per gene.}
 }
 \value{
-A ShortReadQ object storing the fastq file.
+A ShortReadQ object when return_reads is TRUE; otherwise the number
+of written reads, invisibly. The FASTQ is written in both modes.
 }
 \description{
 Transform the isoform quantification into corresponding read sequences for multiple genes.

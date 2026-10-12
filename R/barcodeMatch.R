@@ -19,7 +19,6 @@
 #' @param edit_thresh The highest tolerance of edit distance for the barcode match
 #' @param UMI_len The length of the UMI sequence
 #' @param UMI_flank The length of the flank to add to tolerate the insertions and deletions around UMI
-#' @import Longcellsrc
 #' @return A dataframe contains matched cell barcode, the position of the barcode, UMI and the edit distance of the match.
 #'
 BarcodeMatchUnit = function(seq, barcodes,
@@ -27,13 +26,13 @@ BarcodeMatchUnit = function(seq, barcodes,
                             k = 6, batch = 100,top = 5, cos_thresh = 0.25, alpha = 0.05,
                             edit_thresh = 3,mean_edit_thresh = 1.5,
                             UMI_len = 10,UMI_flank = 1){
-  barcode = barcodeMatch(seq, barcode,
+  barcode = barcodeMatch(seq, barcodes,
                          mu, sigma, sigma_start,
                          k, batch,
                          top, cos_thresh, alpha, edit_thresh,
                          UMI_len, UMI_flank)
 
-  return(data)
+  return(barcode)
 }
 
 #' @title BarcodeFilter
@@ -69,7 +68,6 @@ BarcodeFilter = function(data,mean_edit_thresh = 1.5){
 #' @inheritParams BarcodeMatchUnit
 #' @inheritParams BarcodeFilter
 #' @param cores The number of cores to use for parallelization
-#' @import Longcellsrc
 #' @importFrom future.apply future_lapply
 #' @importFrom parallel detectCores
 #' @importFrom magrittr %>%
@@ -81,8 +79,16 @@ BarcodeMatch = function(seq, barcodes,
                         edit_thresh = 3,mean_edit_thresh = 1.5,
                         UMI_len = 10,UMI_flank = 1,cores = 1){
   n = length(seq)
+  if(!length(barcodes) || anyNA(barcodes) || any(!nzchar(barcodes)) ||
+     length(unique(nchar(barcodes))) != 1L){
+    stop("Provide a non-empty whitelist of equal-length barcode sequences.")
+  }
+  if(n == 0L){
+    return(data.frame(id = integer(), barcode = character(), pos = integer(),
+                      edit = integer(), umi = character(), adapter = character()))
+  }
 
-  seq = as.data.frame(cbind(1:length(seq),seq))
+  seq = as.data.frame(cbind(seq_along(seq),seq))
   colnames(seq) = c("id","seq")
   seq = seq %>% mutate(is = as.numeric(id))
 
@@ -95,7 +101,7 @@ BarcodeMatch = function(seq, barcodes,
                        UMI_len, UMI_flank)
     out$id = x$id[out$id + 1]
     return(out)
-  },future.packages = c("Longcellsrc"),future.seed=TRUE)
+  },future.packages = c("LongcellPre"),future.seed=TRUE)
 
   bm = as.data.frame(do.call(rbind,bm))
   cat(nrow(bm)," out of ",n, "reads are identified with a vaild cell barcode.\n")

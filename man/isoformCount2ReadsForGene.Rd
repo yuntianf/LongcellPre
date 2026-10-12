@@ -13,6 +13,7 @@ isoformCount2ReadsForGene(
   count_col = "count",
   name_col = c("cell", "gene", "polyA"),
   quality = "~",
+  read_offset = 0,
   ...
 )
 }
@@ -34,6 +35,8 @@ in the read name.}
 \item{name_col}{The name of the columns which record the meta information of each read. The information from those columns would be saved in the read name.}
 
 \item{quality}{Currently the quality for the UMI-collapsed reads are all set to the highest as '~'.}
+
+\item{read_offset}{Number of reads already emitted for this gene; used for stable identifiers across batches.}
 }
 \value{
 A ShortReadQ object storing the fastq file.

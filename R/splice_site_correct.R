@@ -7,7 +7,6 @@
 #' @param split The character to seperate different exons in the isoform representation.
 #' @param sep The character to seperate the start and end position of an exon in the isoform representation.
 #' @param splice_site_thresh The minimum number of occurance for a splice site to be preserved.
-#' @importFrom Longcellsrc splice_site_table_cpp
 #' @return A dataframe, the first and the last column stores the start and end position of each read,
 #' the middle columns store if each read has the splicing sites
 splice_site_table <- function(isoforms,
@@ -75,7 +74,6 @@ mid_len = function(mid,sep = ","){
 #'
 #' @inheritParams mid_len
 #' @importFrom Matrix Matrix summary
-#' @importFrom Longcellsrc matrix_xor
 #' @return A dataframe with two columns, the first column denotes the middle splicing site string,
 #' the second denotes the splicing site string that can transform to this splicing site string by
 #' truncations.
@@ -208,8 +206,10 @@ mid_correct_input = function(cells,cluster,gene_isoform){
   if(length(cluster) != length(cells)){
     stop("The size of clusters and cells don't match!")
   }
-  mid = apply(gene_isoform[,2:(ncol(gene_isoform)-1)],
-              1,function(x) paste(x,collapse = ","))
+  internal = setdiff(names(gene_isoform), c("start", "end"))
+  mid = if(length(internal))
+    apply(gene_isoform[,internal,drop = FALSE], 1, paste, collapse = ",") else
+    rep("", nrow(gene_isoform))
   out = as.data.frame(cbind(cells,cluster,
                             gene_isoform$start,mid,gene_isoform$end))
   colnames(out) = c("cell","cluster","start","mid","end")

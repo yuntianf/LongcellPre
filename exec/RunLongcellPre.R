@@ -95,6 +95,12 @@ argparse = function(){
     p$add_argument("--overlap_thresh", help="When mapping a read to an annotated isoform, the read must have a minimum overlap ratio with the annotated isoform", default = 0,type = "integer")
 
     # parameters for verbose
+    p$add_argument("--max_graph_edges",help="Maximum edges per cell/gene UMI graph; exceeding this limit is reported as an error",default=5000000,type="double")
+    p$add_argument("--error_policy",help="UMI gene failures: stop (default) or continue with an explicit QC report",default="stop",choices=c("stop","continue"))
+    p$add_argument("--batch_reads",help="Maximum reads per FASTQ export batch",default=10000,type="integer")
+    p$add_argument("--batch_bases",help="Maximum bases per FASTQ export batch (one longer read may exceed it)",default=10000000,type="double")
+    p$add_argument("--keep_intermediates",help="Retain BarcodeMatch.txt and coverage intermediates",default=FALSE,type="logical")
+    p$add_argument("--force_rerun",help="Regenerate all stages, allowing changed inputs in an existing output directory",default=FALSE,type="logical")
     p$add_argument("--verbose",help = "The flag to indicate the information print of umi count process", default = FALSE,type = "logical")
   }
 
@@ -103,6 +109,7 @@ argparse = function(){
 
 args = argparse()
 
+dir.create(args$work_dir, recursive = TRUE, showWarnings = FALSE)
 log_file <- file.path(args$work_dir, "arg.log")
 
 writeLines(

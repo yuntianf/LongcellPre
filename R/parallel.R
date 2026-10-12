@@ -43,7 +43,7 @@ genes_distribute = function(data,cores, gene_col = "gene"){
   colnames(gene_read_num)[colnames(gene_read_num) == gene_col] = "gene"
 
   unit = c(1:cores,cores:1)
-  gene_read_num = gene_read_num %>% mutate(group = rep(unit,(nrow(data) %/% length(unit) + 1))[1:nrow(gene_read_num)])
+  gene_read_num = gene_read_num %>% mutate(group = rep(unit,length.out = nrow(gene_read_num)))
 
   gene_list = (gene_read_num %>% group_by(group) %>% summarise(gene = list(gene)))$gene
 
